@@ -1,61 +1,7 @@
-import { useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, Stars, Sparkles } from "@react-three/drei";
 import { motion } from "framer-motion";
 import { ArrowDown, ChevronRight, Play } from "lucide-react";
-import * as THREE from "three";
 import heroBg from "@assets/generated_images/dark_sci-fi_nebula_background.png";
-
-function RingsModel() {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.2;
-      groupRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
-    }
-  });
-
-  return (
-    <group ref={groupRef}>
-      {/* Ring 1 - Top Center (Gold) */}
-      <mesh position={[0, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <meshStandardMaterial
-          color="#DAA520"
-          metalness={1}
-          roughness={0.15}
-          emissive="#DAA520"
-          emissiveIntensity={0.2}
-        />
-      </mesh>
-
-      {/* Ring 2 - Bottom Left (Blue) */}
-      <mesh position={[-1, -0.6, 0.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <meshStandardMaterial
-          color="#0B1B3F"
-          metalness={0.9}
-          roughness={0.2}
-          emissive="#14C1D7"
-          emissiveIntensity={0.4}
-        />
-      </mesh>
-
-      {/* Ring 3 - Bottom Right (Blue) */}
-      <mesh position={[1, -0.6, -0.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <meshStandardMaterial
-          color="#0B1B3F"
-          metalness={0.9}
-          roughness={0.2}
-          emissive="#14C1D7"
-          emissiveIntensity={0.4}
-        />
-      </mesh>
-    </group>
-  );
-}
+import ringsLogo from "@assets/generated_images/3d_interlocking_rings_logo.png";
 
 export default function Hero() {
   return (
@@ -73,18 +19,52 @@ export default function Hero() {
       {/* Gradient Overlay */}
       <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-transparent to-black" />
 
-      {/* 3D Canvas Layer */}
-      <div className="absolute inset-0 z-20">
-        <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} color="#14C1D7" />
-          <pointLight position={[-10, -10, -10]} intensity={1.5} color="#DAA520" />
-          <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-            <RingsModel />
-          </Float>
-          <Sparkles count={150} scale={12} size={2} speed={0.4} opacity={0.5} color="#14C1D7" />
-          <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-        </Canvas>
+      {/* Animated Particles */}
+      <div className="absolute inset-0 z-15">
+        {[...Array(50)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-[#14C1D7] rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              opacity: [0.2, 0.8, 0.2],
+            }}
+            transition={{
+              duration: 3 + Math.random() * 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Rotating Rings Logo */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center">
+        <motion.div
+          animate={{ 
+            rotateY: [0, 360],
+            scale: [1, 1.05, 1]
+          }}
+          transition={{ 
+            rotateY: { duration: 20, repeat: Infinity, ease: "linear" },
+            scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+          }}
+          className="relative"
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          <img 
+            src={ringsLogo} 
+            alt="Nexus Rings" 
+            className="w-64 h-64 md:w-96 md:h-96 object-contain drop-shadow-[0_0_50px_rgba(20,193,215,0.5)]"
+          />
+          
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-gradient-radial from-[#14C1D7]/20 via-transparent to-transparent blur-3xl" />
+        </motion.div>
       </div>
 
       {/* Content Overlay */}
