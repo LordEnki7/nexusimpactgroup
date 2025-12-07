@@ -2,6 +2,7 @@ import Hero from "@/components/Hero";
 import EcosystemGrid from "@/components/EcosystemGrid";
 import MissionStrip from "@/components/MissionStrip";
 import DivisionShowcase from "@/components/DivisionShowcase";
+import NewsletterBanner from "@/components/NewsletterBanner";
 import GlobalFootprint from "@/components/GlobalFootprint";
 import Footer from "@/components/Footer";
 
@@ -12,6 +13,7 @@ export default function Home() {
       <EcosystemGrid />
       <MissionStrip />
       <DivisionShowcase />
+      <NewsletterBanner />
       <GlobalFootprint />
       <Footer />
     </main>

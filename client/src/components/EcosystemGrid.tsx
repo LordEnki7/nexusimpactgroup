@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Shield, Activity, Bot, Wallet, Users, Globe, Music, Factory, Hexagon } from "lucide-react";
+import { useState } from "react";
+import ContactDialog from "./ContactDialog";
 
 const divisions = [
   {
@@ -7,7 +9,8 @@ const divisions = [
     title: "C.A.R.E.N.",
     icon: Shield,
     description: "Automated Roadside Guardian",
-    color: "cyan"
+    color: "cyan",
+    onClick: () => {}
   },
   {
     id: 2,
@@ -69,6 +72,14 @@ const divisions = [
 ];
 
 export default function EcosystemGrid() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDivision, setSelectedDivision] = useState("");
+
+  const handleDivisionClick = (title: string) => {
+    setSelectedDivision(title);
+    setDialogOpen(true);
+  };
+
   return (
     <section className="py-32 bg-black relative overflow-hidden">
       {/* Background Grid Lines */}
@@ -89,12 +100,14 @@ export default function EcosystemGrid() {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
               whileHover={{ scale: 1.02, zIndex: 10 }}
+              onClick={() => handleDivisionClick(division.title)}
               className={`
                 relative group cursor-pointer overflow-hidden rounded-xl border
                 ${division.size === 'large' ? 'md:col-span-3 lg:col-span-1 lg:row-span-1 border-[#DAA520] bg-[#DAA520]/5 box-glow-gold' : 'border-[#14C1D7]/30 bg-[#0B1B3F]/20 hover:border-[#14C1D7]'}
                 backdrop-blur-sm transition-all duration-500
                 flex flex-col items-center justify-center p-10 min-h-[250px]
               `}
+              data-testid={`card-division-${division.id}`}
             >
               {/* Scanline effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14C1D7]/5 to-transparent -translate-y-full group-hover:translate-y-full transition-transform duration-1000 ease-in-out" />
@@ -127,6 +140,12 @@ export default function EcosystemGrid() {
           ))}
         </div>
       </div>
+
+      <ContactDialog 
+        isOpen={dialogOpen} 
+        onClose={() => setDialogOpen(false)} 
+        division={selectedDivision}
+      />
     </section>
   );
 }
