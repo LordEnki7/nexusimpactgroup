@@ -16,41 +16,42 @@ function RingsModel() {
     }
   });
 
-  // Materials
-  const goldMaterial = new THREE.MeshStandardMaterial({
-    color: "#DAA520",
-    metalness: 1,
-    roughness: 0.15,
-    emissive: "#DAA520",
-    emissiveIntensity: 0.2,
-  });
-
-  const blueMaterial = new THREE.MeshStandardMaterial({
-    color: "#0B1B3F",
-    metalness: 0.9,
-    roughness: 0.2,
-    emissive: "#14C1D7",
-    emissiveIntensity: 0.4,
-  });
-
   return (
     <group ref={groupRef}>
       {/* Ring 1 - Top Center (Gold) */}
       <mesh position={[0, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <primitive object={goldMaterial} />
+        <meshStandardMaterial
+          color="#DAA520"
+          metalness={1}
+          roughness={0.15}
+          emissive="#DAA520"
+          emissiveIntensity={0.2}
+        />
       </mesh>
 
       {/* Ring 2 - Bottom Left (Blue) */}
       <mesh position={[-1, -0.6, 0.5]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <primitive object={blueMaterial} />
+        <meshStandardMaterial
+          color="#0B1B3F"
+          metalness={0.9}
+          roughness={0.2}
+          emissive="#14C1D7"
+          emissiveIntensity={0.4}
+        />
       </mesh>
 
       {/* Ring 3 - Bottom Right (Blue) */}
       <mesh position={[1, -0.6, -0.5]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.8, 0.15, 16, 100]} />
-        <primitive object={blueMaterial} />
+        <meshStandardMaterial
+          color="#0B1B3F"
+          metalness={0.9}
+          roughness={0.2}
+          emissive="#14C1D7"
+          emissiveIntensity={0.4}
+        />
       </mesh>
     </group>
   );
@@ -114,6 +115,7 @@ export default function Hero() {
               whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(20, 193, 215, 0.4)" }}
               whileTap={{ scale: 0.95 }}
               className="group relative px-8 py-4 bg-transparent border border-[#14C1D7] text-[#14C1D7] font-mono text-sm tracking-wider uppercase overflow-hidden"
+              data-testid="button-explore"
             >
               <span className="absolute inset-0 w-full h-full bg-[#14C1D7]/10 group-hover:bg-[#14C1D7]/20 transition-all duration-300" />
               <span className="relative flex items-center gap-2 font-bold">
@@ -125,6 +127,7 @@ export default function Hero() {
               whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(218, 165, 32, 0.4)" }}
               whileTap={{ scale: 0.95 }}
               className="group relative px-8 py-4 bg-transparent border border-[#DAA520] text-[#DAA520] font-mono text-sm tracking-wider uppercase overflow-hidden"
+              data-testid="button-watch-vision"
             >
               <span className="absolute inset-0 w-full h-full bg-[#DAA520]/10 group-hover:bg-[#DAA520]/20 transition-all duration-300" />
               <span className="relative flex items-center gap-2 font-bold">
