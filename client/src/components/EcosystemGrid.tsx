@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon } from "lucide-react";
+import { Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon, Palette, Stamp, Mic, Smartphone, Heart } from "lucide-react";
 import { useState } from "react";
 import ContactDialog from "./ContactDialog";
 import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
@@ -84,6 +84,41 @@ const divisions: Division[] = [
     title: "Zapp Marketing",
     icon: Factory,
     description: "Global Manufacturing",
+    color: "cyan"
+  },
+  {
+    id: 10,
+    title: "Studio Artist Live",
+    icon: Palette,
+    description: "Creative Performance Platform",
+    color: "cyan"
+  },
+  {
+    id: 11,
+    title: "Right Time Notary",
+    icon: Stamp,
+    description: "Mobile Notary Services",
+    color: "cyan"
+  },
+  {
+    id: 12,
+    title: "The Shock Factor",
+    icon: Mic,
+    description: "Podcast Entertainment",
+    color: "cyan"
+  },
+  {
+    id: 13,
+    title: "ClearSpace",
+    icon: Smartphone,
+    description: "iPhone Image Cleaner",
+    color: "cyan"
+  },
+  {
+    id: 14,
+    title: "CAD and Me",
+    icon: Heart,
+    description: "Coronary Artery Disease Audiobook",
     color: "cyan"
   }
 ];
