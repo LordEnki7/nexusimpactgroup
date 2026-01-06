@@ -6,6 +6,7 @@ import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
 import carenLogo from "@assets/caren_webapp_logo_1767677583106.png";
 import rentABuddyLogo from "@assets/logo_1767677865961.png";
 import projectDnaLogo from "@assets/logo_Real_(1)_1767678004955.jpg";
+import eternalChaseLogo from "@assets/Gemini_Generated_Image_h4tze0h4tze0h4tz_1767678310554.png";
 
 type Division = {
   id: number;
@@ -64,7 +65,7 @@ const divisions: Division[] = [
   {
     id: 7,
     title: "Eternal Chase",
-    icon: Globe,
+    logo: eternalChaseLogo,
     description: "Immersive Entertainment",
     color: "cyan"
   },
