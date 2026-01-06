@@ -7,6 +7,7 @@ import carenLogo from "@assets/caren_webapp_logo_1767677583106.png";
 import rentABuddyLogo from "@assets/logo_1767677865961.png";
 import projectDnaLogo from "@assets/logo_Real_(1)_1767678004955.jpg";
 import eternalChaseLogo from "@assets/Gemini_Generated_Image_h4tze0h4tze0h4tz_1767678310554.png";
+import realPulseLogo from "@assets/hero-image_1767679529900.png";
 
 type Division = {
   id: number;
@@ -29,7 +30,7 @@ const divisions: Division[] = [
   {
     id: 2,
     title: "Real Pulse Verifier",
-    icon: Activity,
+    logo: realPulseLogo,
     description: "True Identity Validation",
     color: "cyan"
   },
