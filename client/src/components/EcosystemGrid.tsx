@@ -12,6 +12,7 @@ import myLifeAssistantLogo from "@assets/My_Life_Assistant_Logo_1767680675223.pn
 import nigCoreLogo from "@assets/NEXUS_Impact_Group_1764972734788.png";
 import clearSpaceLogo from "@assets/ClearSpace_1024x1024_1767682474294.png";
 import shockFactorLogo from "@assets/theshockfactor_1767683156627.jpg";
+import cadAndMeLogo from "@assets/Coronary_Artery_Disease_1767683576054.png";
 
 type Division = {
   id: number;
@@ -119,7 +120,7 @@ const divisions: Division[] = [
   {
     id: 14,
     title: "CAD and Me",
-    icon: Heart,
+    logo: cadAndMeLogo,
     description: "Coronary Artery Disease Audiobook",
     color: "cyan"
   }
