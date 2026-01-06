@@ -13,6 +13,7 @@ import nigCoreLogo from "@assets/NEXUS_Impact_Group_1764972734788.png";
 import clearSpaceLogo from "@assets/ClearSpace_1024x1024_1767682474294.png";
 import shockFactorLogo from "@assets/theshockfactor_1767683156627.jpg";
 import cadAndMeLogo from "@assets/Coronary_Artery_Disease_1767683576054.png";
+import zappLogo from "@assets/Zapp_1767683679271.png";
 
 type Division = {
   id: number;
@@ -84,8 +85,8 @@ const divisions: Division[] = [
   },
   {
     id: 9,
-    title: "Zapp Marketing",
-    icon: Factory,
+    title: "Zapp Marketing and Manufacturing",
+    logo: zappLogo,
     description: "Global Manufacturing",
     color: "cyan"
   },
