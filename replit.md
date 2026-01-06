@@ -14,25 +14,33 @@ A stunning, futuristic marketing website for Nexus Impact Group - a fully integr
 client/
 ├── src/
 │   ├── components/
-│   │   ├── Hero.tsx           # Hero section with 3D scene
-│   │   ├── EcosystemGrid.tsx  # Division grid with logos
+│   │   ├── Hero.tsx             # Hero section with 3D scene + video modal
+│   │   ├── EcosystemGrid.tsx    # Division grid with logos
 │   │   ├── DivisionShowcase.tsx # Deep-dive into each division
-│   │   ├── ContactDialog.tsx  # Contact form modal
-│   │   ├── Footer.tsx         # Newsletter signup
-│   │   └── Navigation.tsx     # Site header
+│   │   ├── CaseStudies.tsx      # Success stories & testimonials
+│   │   ├── Timeline.tsx         # NIG journey roadmap
+│   │   ├── ComparisonCharts.tsx # NIG vs competitors
+│   │   ├── SocialProof.tsx      # Stats & testimonial carousel
+│   │   ├── BookingSection.tsx   # Calendly + callback request
+│   │   ├── FAQ.tsx              # Categorized FAQ accordion
+│   │   ├── QuoteForm.tsx        # App development quote request
+│   │   ├── Blog.tsx             # News & updates section
+│   │   ├── ContactDialog.tsx    # Contact form modal
+│   │   ├── Footer.tsx           # Newsletter signup
+│   │   └── Navigation.tsx       # Site header
 │   ├── pages/
-│   │   └── Home.tsx           # Main landing page
-│   └── App.tsx                # Router setup
-├── index.html                 # SEO meta tags
-└── index.css                  # Global styles, animations
+│   │   └── Home.tsx             # Main landing page
+│   └── App.tsx                  # Router setup
+├── index.html                   # SEO meta tags
+└── index.css                    # Global styles, animations
 
 server/
-├── routes.ts      # API endpoints for inquiries/newsletter
+├── routes.ts      # API endpoints
 ├── storage.ts     # Database interface (Drizzle)
 └── index.ts       # Express server
 
 shared/
-└── schema.ts      # Database schema (inquiries, subscribers)
+└── schema.ts      # Database schema
 ```
 
 ## 14 Divisions (13 + NIG Core)
@@ -51,22 +59,48 @@ shared/
 13. **ClearSpace** - iPhone Image Cleaner
 14. **CAD and Me** - Coronary Artery Disease Audiobook by S. Williams
 
-## Database
+## Database Tables
 PostgreSQL with Drizzle ORM:
+- `users` - User accounts
 - `inquiries` - Contact form submissions
 - `subscribers` - Newsletter signups
+- `quote_requests` - App development quote requests
+- `callback_requests` - Phone callback requests
+- `blog_posts` - Blog/news articles
 
 ## API Endpoints
 - `POST /api/inquiries` - Submit contact form
 - `POST /api/subscribe` - Newsletter signup
+- `POST /api/quotes` - Submit quote request
+- `POST /api/callbacks` - Request callback
 - `GET /api/inquiries` - List all inquiries (admin)
+- `GET /api/blog` - Get published blog posts
+- `GET /api/blog/:slug` - Get single blog post
+
+## Features
+- **AI-Generated Hero Video** - Cinematic intro video with modal playback
+- **Case Studies** - Interactive success stories with testimonials
+- **Timeline** - Visual roadmap of NIG's journey
+- **Comparison Charts** - Feature comparison vs competitors
+- **Social Proof** - Stats bar and testimonial carousel
+- **Booking System** - Callback request form (Calendly placeholder)
+- **FAQ Section** - Categorized questions by division
+- **Quote Form** - App development inquiry form
+- **Blog Section** - Featured + regular posts
 
 ## Recent Changes (Jan 2026)
+- Added AI-generated hero video with modal playback
+- Created Case Studies section with 5 success stories
+- Built Timeline component showing NIG journey 2020-2026
+- Added Comparison Charts for 3 divisions
+- Implemented Social Proof with stats and testimonial carousel
+- Created Booking Section with callback form
+- Built comprehensive FAQ with category tabs
+- Added Quote Form for app development requests
+- Created Blog section with featured posts
+- Updated database schema with new tables
 - Added all 13 division logos to EcosystemGrid
-- Updated DivisionShowcase with full division details
-- Updated ContactDialog dropdown with all divisions
 - Enhanced SEO meta tags
-- Fixed TypeScript types for division icons/logos
 
 ## User Preferences
 - Futuristic, tech-forward design aesthetic
