@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Shield, Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon } from "lucide-react";
+import { Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon } from "lucide-react";
 import { useState } from "react";
 import ContactDialog from "./ContactDialog";
 import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
+import carenLogo from "@assets/caren_webapp_logo_1767677583106.png";
 
 type Division = {
   id: number;
@@ -18,7 +19,7 @@ const divisions: Division[] = [
   {
     id: 1,
     title: "C.A.R.E.N.",
-    icon: Shield,
+    logo: carenLogo,
     description: "Automated Roadside Guardian",
     color: "cyan"
   },
