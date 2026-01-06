@@ -9,7 +9,7 @@ import projectDnaLogo from "@assets/logo_Real_(1)_1767678004955.jpg";
 import eternalChaseLogo from "@assets/Gemini_Generated_Image_h4tze0h4tze0h4tz_1767678310554.png";
 import realPulseLogo from "@assets/hero-image_1767679529900.png";
 import myLifeAssistantLogo from "@assets/My_Life_Assistant_Logo_1767680675223.png";
-import nigCoreLogo from "@assets/NIG_1764972734790.png";
+import nigCoreLogo from "@assets/NEXUS_Impact_Group_1764972734788.png";
 
 type Division = {
   id: number;
