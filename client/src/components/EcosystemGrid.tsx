@@ -5,6 +5,7 @@ import ContactDialog from "./ContactDialog";
 import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
 import carenLogo from "@assets/caren_webapp_logo_1767677583106.png";
 import rentABuddyLogo from "@assets/logo_1767677865961.png";
+import projectDnaLogo from "@assets/logo_Real_(1)_1767678004955.jpg";
 
 type Division = {
   id: number;
@@ -70,7 +71,7 @@ const divisions: Division[] = [
   {
     id: 8,
     title: "Project DNA Music",
-    icon: Music,
+    logo: projectDnaLogo,
     description: "Sonic Engineering",
     color: "cyan"
   },
