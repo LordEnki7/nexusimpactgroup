@@ -1,9 +1,13 @@
-import { motion } from "framer-motion";
-import { ArrowDown, ChevronRight, Play } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowDown, ChevronRight, Play, X } from "lucide-react";
+import { useState } from "react";
 import heroBg from "@assets/generated_images/dark_sci-fi_nebula_background.png";
 import ringsLogo from "@assets/generated_images/3d_interlocking_rings_logo.png";
+import heroVideo from "@assets/generated_videos/futuristic_nig_ecosystem_hero_video.mp4";
 
 export default function Hero() {
+  const [showVideo, setShowVideo] = useState(false);
+
   return (
     <section className="relative h-screen w-full overflow-hidden bg-black">
       {/* Background Image Layer */}
@@ -104,6 +108,7 @@ export default function Hero() {
             </motion.button>
 
             <motion.button
+              onClick={() => setShowVideo(true)}
               whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(218, 165, 32, 0.4)" }}
               whileTap={{ scale: 0.95 }}
               className="group relative px-8 py-4 bg-transparent border border-[#DAA520] text-[#DAA520] font-mono text-sm tracking-wider uppercase overflow-hidden"
@@ -127,6 +132,49 @@ export default function Hero() {
         <span className="text-[10px] uppercase tracking-[0.2em] font-mono">Scroll to enter</span>
         <ArrowDown className="w-5 h-5" />
       </motion.div>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-lg"
+            onClick={() => setShowVideo(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative w-full max-w-5xl mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowVideo(false)}
+                className="absolute -top-12 right-0 text-white hover:text-[#14C1D7] transition-colors"
+                data-testid="button-close-video"
+              >
+                <X className="w-8 h-8" />
+              </button>
+              <div className="rounded-xl overflow-hidden border border-[#14C1D7]/30 shadow-[0_0_50px_rgba(20,193,215,0.3)]">
+                <video
+                  src={heroVideo}
+                  controls
+                  autoPlay
+                  className="w-full aspect-video"
+                  data-testid="video-hero"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <p className="text-center mt-4 text-[#DAA520] font-mono text-sm uppercase tracking-widest">
+                The NIG Vision
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
