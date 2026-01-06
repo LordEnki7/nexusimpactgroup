@@ -8,6 +8,7 @@ import rentABuddyLogo from "@assets/logo_1767677865961.png";
 import projectDnaLogo from "@assets/logo_Real_(1)_1767678004955.jpg";
 import eternalChaseLogo from "@assets/Gemini_Generated_Image_h4tze0h4tze0h4tz_1767678310554.png";
 import realPulseLogo from "@assets/hero-image_1767679529900.png";
+import myLifeAssistantLogo from "@assets/My_Life_Assistant_Logo_1767680675223.png";
 
 type Division = {
   id: number;
@@ -37,7 +38,7 @@ const divisions: Division[] = [
   {
     id: 3,
     title: "My Life Assistant",
-    icon: Bot,
+    logo: myLifeAssistantLogo,
     description: "AI Personal Concierge",
     color: "cyan"
   },
