@@ -4,6 +4,7 @@ import { useState } from "react";
 import ContactDialog from "./ContactDialog";
 import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
 import carenLogo from "@assets/caren_webapp_logo_1767677583106.png";
+import rentABuddyLogo from "@assets/logo_1767677865961.png";
 
 type Division = {
   id: number;
@@ -55,7 +56,7 @@ const divisions: Division[] = [
   {
     id: 6,
     title: "Rent-A-Buddy",
-    icon: Users,
+    logo: rentABuddyLogo,
     description: "Platonic Connection",
     color: "cyan"
   },
