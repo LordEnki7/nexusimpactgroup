@@ -126,7 +126,12 @@ export default function ContactDialog({ isOpen, onClose, division = "" }: Contac
                       <option value="Rent-A-Buddy">Rent-A-Buddy</option>
                       <option value="Eternal Chase">Eternal Chase</option>
                       <option value="Project DNA Music">Project DNA Music</option>
-                      <option value="Zapp Marketing">Zapp Marketing</option>
+                      <option value="Zapp Marketing and Manufacturing">Zapp Marketing and Manufacturing</option>
+                      <option value="Studio Artist Live">Studio Artist Live</option>
+                      <option value="Right Time Notary">Right Time Notary</option>
+                      <option value="The Shock Factor">The Shock Factor</option>
+                      <option value="ClearSpace">ClearSpace</option>
+                      <option value="CAD and Me">CAD and Me</option>
                     </select>
                   </div>
 
