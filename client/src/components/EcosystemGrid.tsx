@@ -28,9 +28,9 @@ const divisions = [
   },
   {
     id: 4,
-    title: "Friendly Financial",
+    title: "The Remedy Club",
     icon: Wallet,
-    description: "Future of Banking",
+    description: "Credit & Debt Freedom",
     color: "gold"
   },
   {

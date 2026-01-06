@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import carenImg from "@assets/generated_images/futuristic_car_hud_interface.png";
 import pulseImg from "@assets/generated_images/digital_identity_scan.png";
 import assistantImg from "@assets/generated_images/ai_hologram_assistant.png";
-import financeImg from "@assets/generated_images/financial_dashboard_hologram.png";
+import remedyImg from "@assets/The_Remedy_Club_promotional_images_1767676977108.png";
 import dnaImg from "@assets/generated_images/cosmic_dna_strand.png";
 import tradeImg from "@assets/generated_images/futuristic_global_trade_map.png";
 
@@ -28,11 +28,11 @@ const showcaseItems = [
     align: "right"
   },
   {
-    id: "finance",
-    title: "Friendly Financial",
-    subtitle: "Wealth Without Borders",
-    description: "Next-generation banking infrastructure for the global citizen.",
-    image: financeImg,
+    id: "remedy",
+    title: "The Remedy Club",
+    subtitle: "Credit & Debt Freedom",
+    description: "Fix your credit. Empower your future. Advanced credit and legal solutions with Mr. Delete Credit Counseling.",
+    image: remedyImg,
     align: "left"
   },
   {

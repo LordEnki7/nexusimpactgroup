@@ -17,7 +17,7 @@ export default function Footer() {
             <ul className="space-y-4 text-gray-400 text-sm">
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">C.A.R.E.N.</li>
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Real Pulse</li>
-              <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Friendly Financial</li>
+              <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">The Remedy Club</li>
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Eternal Chase</li>
             </ul>
           </div>
