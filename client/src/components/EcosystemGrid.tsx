@@ -15,6 +15,7 @@ import shockFactorLogo from "@assets/theshockfactor_1767683156627.jpg";
 import cadAndMeLogo from "@assets/Coronary_Artery_Disease_1767683576054.png";
 import zappLogo from "@assets/Zapp_1767683679271.png";
 import studioArtistLogo from "@assets/5-3d_(1)_1767685101771.jpg";
+import rightTimeNotaryLogo from "@assets/Right_Time_Notary_logo_1767685417489.png";
 
 type Division = {
   id: number;
@@ -101,7 +102,7 @@ const divisions: Division[] = [
   {
     id: 11,
     title: "Right Time Notary",
-    icon: Stamp,
+    logo: rightTimeNotaryLogo,
     description: "Mobile Notary Services",
     color: "cyan"
   },
