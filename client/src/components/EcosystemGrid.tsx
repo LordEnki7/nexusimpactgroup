@@ -1,16 +1,26 @@
 import { motion } from "framer-motion";
-import { Shield, Activity, Bot, Wallet, Users, Globe, Music, Factory, Hexagon } from "lucide-react";
+import { Shield, Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon } from "lucide-react";
 import { useState } from "react";
 import ContactDialog from "./ContactDialog";
+import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
 
-const divisions = [
+type Division = {
+  id: number;
+  title: string;
+  description: string;
+  color: string;
+  size?: string;
+  icon?: LucideIcon;
+  logo?: string;
+};
+
+const divisions: Division[] = [
   {
     id: 1,
     title: "C.A.R.E.N.",
     icon: Shield,
     description: "Automated Roadside Guardian",
-    color: "cyan",
-    onClick: () => {}
+    color: "cyan"
   },
   {
     id: 2,
@@ -29,7 +39,7 @@ const divisions = [
   {
     id: 4,
     title: "The Remedy Club",
-    icon: Wallet,
+    logo: remedyLogo,
     description: "Credit & Debt Freedom",
     color: "gold"
   },
@@ -38,7 +48,7 @@ const divisions = [
     title: "NIG CORE ECOSYSTEM",
     icon: Hexagon,
     description: "Central Intelligence",
-    color: "core", // Special
+    color: "core",
     size: "large"
   },
   {
@@ -112,13 +122,22 @@ export default function EcosystemGrid() {
               {/* Scanline effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14C1D7]/5 to-transparent -translate-y-full group-hover:translate-y-full transition-transform duration-1000 ease-in-out" />
 
-              <div className={`
-                mb-6 p-4 rounded-full border 
-                ${division.color === 'gold' || division.color === 'core' ? 'border-[#DAA520] text-[#DAA520]' : 'border-[#14C1D7] text-[#14C1D7]'}
-                group-hover:scale-110 transition-transform duration-300
-              `}>
-                <division.icon className="w-10 h-10" strokeWidth={1} />
-              </div>
+              {division.logo ? (
+                <div className="mb-6 w-24 h-24 rounded-xl overflow-hidden group-hover:scale-110 transition-transform duration-300">
+                  <img src={division.logo} alt={division.title} className="w-full h-full object-cover" />
+                </div>
+              ) : division.icon ? (
+                <div className={`
+                  mb-6 p-4 rounded-full border 
+                  ${division.color === 'gold' || division.color === 'core' ? 'border-[#DAA520] text-[#DAA520]' : 'border-[#14C1D7] text-[#14C1D7]'}
+                  group-hover:scale-110 transition-transform duration-300
+                `}>
+                  {(() => {
+                    const IconComponent = division.icon;
+                    return <IconComponent className="w-10 h-10" strokeWidth={1} />;
+                  })()}
+                </div>
+              ) : null}
 
               <h4 className={`
                 text-xl font-heading font-bold mb-2 text-center
