@@ -11,6 +11,7 @@ import realPulseLogo from "@assets/hero-image_1767679529900.png";
 import myLifeAssistantLogo from "@assets/My_Life_Assistant_Logo_1767680675223.png";
 import nigCoreLogo from "@assets/NEXUS_Impact_Group_1764972734788.png";
 import clearSpaceLogo from "@assets/ClearSpace_1024x1024_1767682474294.png";
+import shockFactorLogo from "@assets/theshockfactor_1767683156627.jpg";
 
 type Division = {
   id: number;
@@ -104,7 +105,7 @@ const divisions: Division[] = [
   {
     id: 12,
     title: "The Shock Factor",
-    icon: Mic,
+    logo: shockFactorLogo,
     description: "Podcast Entertainment",
     color: "cyan"
   },
