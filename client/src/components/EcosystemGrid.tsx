@@ -14,6 +14,7 @@ import clearSpaceLogo from "@assets/ClearSpace_1024x1024_1767682474294.png";
 import shockFactorLogo from "@assets/theshockfactor_1767683156627.jpg";
 import cadAndMeLogo from "@assets/Coronary_Artery_Disease_1767683576054.png";
 import zappLogo from "@assets/Zapp_1767683679271.png";
+import studioArtistLogo from "@assets/5-3d_(1)_1767685101771.jpg";
 
 type Division = {
   id: number;
@@ -93,7 +94,7 @@ const divisions: Division[] = [
   {
     id: 10,
     title: "Studio Artist Live",
-    icon: Palette,
+    logo: studioArtistLogo,
     description: "Creative Performance Platform",
     color: "cyan"
   },
