@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon, Palette, Stamp, Mic, Smartphone, Heart } from "lucide-react";
+import { Activity, Bot, Users, Globe, Music, Factory, Hexagon, LucideIcon, Palette, Stamp, Mic, Smartphone, Heart, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import ContactDialog from "./ContactDialog";
 import remedyLogo from "@assets/The_Remedy_Club_logo_design_1767676977106.png";
@@ -25,6 +25,7 @@ type Division = {
   size?: string;
   icon?: LucideIcon;
   logo?: string;
+  link?: string;
 };
 
 const divisions: Division[] = [
@@ -33,7 +34,8 @@ const divisions: Division[] = [
     title: "C.A.R.E.N.",
     logo: carenLogo,
     description: "Automated Roadside Guardian",
-    color: "cyan"
+    color: "cyan",
+    link: "https://carenalert.com"
   },
   {
     id: 2,
@@ -47,14 +49,16 @@ const divisions: Division[] = [
     title: "My Life Assistant",
     logo: myLifeAssistantLogo,
     description: "AI Personal Concierge",
-    color: "cyan"
+    color: "cyan",
+    link: "https://mylifeassistant.vip"
   },
   {
     id: 4,
     title: "The Remedy Club",
     logo: remedyLogo,
     description: "Credit & Debt Freedom",
-    color: "gold"
+    color: "gold",
+    link: "https://theremedyclub.vip"
   },
   {
     id: 5,
@@ -69,35 +73,40 @@ const divisions: Division[] = [
     title: "Rent-A-Buddy",
     logo: rentABuddyLogo,
     description: "Platonic Connection",
-    color: "cyan"
+    color: "cyan",
+    link: "https://rent-a-buddy.info"
   },
   {
     id: 7,
     title: "Eternal Chase",
     logo: eternalChaseLogo,
     description: "Immersive Entertainment",
-    color: "cyan"
+    color: "cyan",
+    link: "https://eternalchase.stream"
   },
   {
     id: 8,
     title: "Project DNA Music",
     logo: projectDnaLogo,
     description: "Sonic Engineering",
-    color: "cyan"
+    color: "cyan",
+    link: "https://projectdnamusic.info"
   },
   {
     id: 9,
     title: "Zapp Marketing and Manufacturing",
     logo: zappLogo,
     description: "Global Manufacturing",
-    color: "cyan"
+    color: "cyan",
+    link: "https://zapp-ecommerce.online"
   },
   {
     id: 10,
     title: "Studio Artist Live",
     logo: studioArtistLogo,
     description: "Creative Performance Platform",
-    color: "cyan"
+    color: "cyan",
+    link: "https://studioartistlive.com"
   },
   {
     id: 11,
@@ -118,7 +127,8 @@ const divisions: Division[] = [
     title: "ClearSpace",
     logo: clearSpaceLogo,
     description: "iPhone Image Cleaner",
-    color: "cyan"
+    color: "cyan",
+    link: "https://clearspace.photos"
   },
   {
     id: 14,
@@ -133,9 +143,13 @@ export default function EcosystemGrid() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDivision, setSelectedDivision] = useState("");
 
-  const handleDivisionClick = (title: string) => {
-    setSelectedDivision(title);
-    setDialogOpen(true);
+  const handleDivisionClick = (division: Division) => {
+    if (division.link) {
+      window.open(division.link, "_blank", "noopener,noreferrer");
+    } else {
+      setSelectedDivision(division.title);
+      setDialogOpen(true);
+    }
   };
 
   return (
@@ -158,7 +172,7 @@ export default function EcosystemGrid() {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
               whileHover={{ scale: 1.02, zIndex: 10 }}
-              onClick={() => handleDivisionClick(division.title)}
+              onClick={() => handleDivisionClick(division)}
               className={`
                 relative group cursor-pointer overflow-hidden rounded-xl border
                 ${division.size === 'large' ? 'md:col-span-3 lg:col-span-1 lg:row-span-1 border-[#DAA520] bg-[#DAA520]/5 box-glow-gold' : 'border-[#14C1D7]/30 bg-[#0B1B3F]/20 hover:border-[#14C1D7]'}
@@ -197,6 +211,18 @@ export default function EcosystemGrid() {
               <p className="text-gray-400 font-mono text-xs uppercase tracking-wider text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
                 {division.description}
               </p>
+
+              {division.link ? (
+                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-[#14C1D7]/20 border border-[#14C1D7]/50 rounded-full">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-mono text-[#14C1D7] uppercase tracking-wider">Live</span>
+                  <ExternalLink className="w-3 h-3 text-[#14C1D7]" />
+                </div>
+              ) : (
+                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-gray-800/50 border border-gray-600/50 rounded-full">
+                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Coming Soon</span>
+                </div>
+              )}
 
               {/* Corners */}
               <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#14C1D7] opacity-50" />
