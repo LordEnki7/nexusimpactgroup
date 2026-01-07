@@ -1,4 +1,4 @@
-CREATE TABLE "blog_posts" (
+CREATE TABLE IF NOT EXISTS "blog_posts" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"title" text NOT NULL,
 	"slug" text NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE "blog_posts" (
 	CONSTRAINT "blog_posts_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
-CREATE TABLE "callback_requests" (
+CREATE TABLE IF NOT EXISTS "callback_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"phone" text NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE "callback_requests" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "inquiries" (
+CREATE TABLE IF NOT EXISTS "inquiries" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE "inquiries" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "quote_requests" (
+CREATE TABLE IF NOT EXISTS "quote_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE "quote_requests" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "subscribers" (
+CREATE TABLE IF NOT EXISTS "subscribers" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"subscribed_at" timestamp DEFAULT now() NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE "subscribers" (
 	CONSTRAINT "subscribers_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"username" text NOT NULL,
 	"password" text NOT NULL,
