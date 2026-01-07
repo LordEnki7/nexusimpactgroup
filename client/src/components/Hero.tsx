@@ -162,6 +162,9 @@ export default function Hero() {
                   src={heroVideo}
                   controls
                   autoPlay
+                  muted
+                  playsInline
+                  preload="auto"
                   className="w-full aspect-video"
                   data-testid="video-hero"
                 >
