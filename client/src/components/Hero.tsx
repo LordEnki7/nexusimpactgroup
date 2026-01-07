@@ -23,51 +23,55 @@ export default function Hero() {
       {/* Gradient Overlay */}
       <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-transparent to-black" />
 
-      {/* Animated Particles */}
+      {/* Animated Particles - CSS animations for better performance */}
       <div className="absolute inset-0 z-15">
-        {[...Array(50)].map((_, i) => (
-          <motion.div
+        {[...Array(20)].map((_, i) => (
+          <div
             key={i}
-            className="absolute w-1 h-1 bg-[#14C1D7] rounded-full"
+            className="absolute w-1 h-1 bg-[#14C1D7] rounded-full animate-pulse"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.2, 0.8, 0.2],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
+              left: `${(i * 5) % 100}%`,
+              top: `${(i * 7) % 100}%`,
+              opacity: 0.4,
+              animationDelay: `${i * 0.2}s`,
+              animationDuration: `${2 + (i % 3)}s`,
             }}
           />
         ))}
       </div>
 
-      {/* Rotating Rings Logo */}
+      {/* Rotating Rings Logo - GPU accelerated */}
       <div className="absolute inset-0 z-20 flex items-center justify-center">
         <motion.div
+          initial={{ rotateY: 0, scale: 1 }}
           animate={{ 
-            rotateY: [0, 360],
+            rotateY: 360,
             scale: [1, 1.05, 1]
           }}
           transition={{ 
             rotateY: { duration: 20, repeat: Infinity, ease: "linear" },
             scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
           }}
-          className="relative"
-          style={{ transformStyle: "preserve-3d" }}
+          className="relative gpu-accelerated"
+          style={{ 
+            transformStyle: "preserve-3d",
+            willChange: "transform",
+            transform: "translateZ(0)",
+          }}
         >
           <img 
             src={ringsLogo} 
             alt="Nexus Rings" 
-            className="w-64 h-64 md:w-96 md:h-96 object-contain drop-shadow-[0_0_50px_rgba(20,193,215,0.5)]"
+            className="w-64 h-64 md:w-96 md:h-96 object-contain"
+            style={{ 
+              filter: "drop-shadow(0 0 50px rgba(20,193,215,0.5))",
+              willChange: "transform",
+            }}
+            loading="eager"
           />
           
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-radial from-[#14C1D7]/20 via-transparent to-transparent blur-3xl" />
+          {/* Simplified glow effect */}
+          <div className="absolute inset-0 bg-[#14C1D7]/10 blur-2xl rounded-full" />
         </motion.div>
       </div>
 
