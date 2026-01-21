@@ -13,9 +13,13 @@ import {
   Bot,
   TrendingUp,
   RefreshCw,
-  Home
+  Home,
+  LogOut,
+  Lock
 } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 type Division = {
   id: number;
@@ -53,12 +57,50 @@ type DashboardData = {
 };
 
 export default function CommandCenter() {
-  const { data, isLoading, refetch } = useQuery<{ success: boolean; data: DashboardData }>({
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  
+  const { data, isLoading, refetch, error } = useQuery<{ success: boolean; data: DashboardData }>({
     queryKey: ["/api/dashboard"],
     refetchInterval: 30000,
+    enabled: isAuthenticated,
+    retry: false,
   });
 
   const dashboard = data?.data;
+  const isUnauthorized = error?.message?.includes("401") || !isAuthenticated;
+
+  // If not authenticated, show login prompt
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(20,193,215,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(20,193,215,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center p-12 rounded-2xl border border-[#14C1D7]/30 bg-[#0B1B3F]/50 backdrop-blur-xl max-w-md"
+        >
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#14C1D7] to-[#DAA520] flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-black" />
+          </div>
+          <h1 className="text-2xl font-bold font-heading mb-2">NIG Core Access</h1>
+          <p className="text-gray-400 mb-8">Authorized personnel only. Please authenticate to access the Command Center.</p>
+          <a 
+            href="/api/login"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-[#14C1D7] text-black font-bold rounded-lg hover:bg-[#14C1D7]/80 transition-colors"
+            data-testid="button-login"
+          >
+            <Shield className="w-5 h-5" />
+            Authenticate
+          </a>
+          <div className="mt-6">
+            <Link href="/">
+              <span className="text-sm text-gray-500 hover:text-[#DAA520] transition-colors cursor-pointer">Return to main site</span>
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
@@ -100,6 +142,14 @@ export default function CommandCenter() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {user && (
+                <div className="flex items-center gap-3 px-3 py-1.5 border border-[#14C1D7]/20 rounded-lg bg-[#0B1B3F]/30">
+                  {user.profileImageUrl && (
+                    <img src={user.profileImageUrl} alt="" className="w-6 h-6 rounded-full" />
+                  )}
+                  <span className="text-sm text-gray-400">{user.firstName || user.email || "Admin"}</span>
+                </div>
+              )}
               <button 
                 onClick={() => refetch()}
                 className="p-2 border border-[#14C1D7]/30 rounded-lg hover:bg-[#14C1D7]/10 transition-colors"
@@ -113,6 +163,13 @@ export default function CommandCenter() {
                   <span>Main Site</span>
                 </button>
               </Link>
+              <a 
+                href="/api/logout"
+                className="flex items-center gap-2 px-3 py-2 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors text-red-400 text-sm"
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </header>

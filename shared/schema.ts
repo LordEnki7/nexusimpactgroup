@@ -204,3 +204,6 @@ export type FinancialSnapshot = typeof financialSnapshots.$inferSelect;
 export type InsertFinancialSnapshot = z.infer<typeof insertFinancialSnapshotSchema>;
 export type AgentLog = typeof agentLogs.$inferSelect;
 export type InsertAgentLog = z.infer<typeof insertAgentLogSchema>;
+
+// Auth schema (mandatory for Replit Auth)
+export * from "./models/auth";

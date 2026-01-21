@@ -11,6 +11,25 @@ import {
   insertAgentLogSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { isAuthenticated } from "./replit_integrations/auth";
+
+// Admin user ID - only this user can access the dashboard
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+
+// Middleware to check if user is the admin
+const isAdmin: typeof isAuthenticated = async (req, res, next) => {
+  await isAuthenticated(req, res, () => {
+    const user = req.user as any;
+    const userId = user?.claims?.sub;
+    
+    // If no ADMIN_USER_ID is set, allow any authenticated user (for initial setup)
+    if (!ADMIN_USER_ID || userId === ADMIN_USER_ID) {
+      next();
+    } else {
+      res.status(403).json({ success: false, error: "Access denied" });
+    }
+  });
+};
 
 export async function registerRoutes(
   httpServer: Server,
@@ -121,11 +140,11 @@ export async function registerRoutes(
   });
 
   // ============================================
-  // NIG CORE COMMAND CENTER ENDPOINTS
+  // NIG CORE COMMAND CENTER ENDPOINTS (Protected)
   // ============================================
 
-  // Get dashboard overview
-  app.get("/api/dashboard", async (req, res) => {
+  // Get dashboard overview (admin only)
+  app.get("/api/dashboard", isAdmin, async (req, res) => {
     try {
       const [allDivisions, allMetrics, allIncidents, financials, logs] = await Promise.all([
         storage.getDivisions(),
@@ -160,8 +179,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get all divisions
-  app.get("/api/divisions", async (req, res) => {
+  // Get all divisions (admin only)
+  app.get("/api/divisions", isAdmin, async (req, res) => {
     try {
       const allDivisions = await storage.getDivisions();
       res.json({ success: true, divisions: allDivisions });
@@ -170,8 +189,8 @@ export async function registerRoutes(
     }
   });
 
-  // Create a division
-  app.post("/api/divisions", async (req, res) => {
+  // Create a division (admin only)
+  app.post("/api/divisions", isAdmin, async (req, res) => {
     try {
       const data = insertDivisionSchema.parse(req.body);
       const division = await storage.createDivision(data);
@@ -185,8 +204,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get incidents
-  app.get("/api/incidents", async (req, res) => {
+  // Get incidents (admin only)
+  app.get("/api/incidents", isAdmin, async (req, res) => {
     try {
       const divisionId = req.query.divisionId ? parseInt(req.query.divisionId as string) : undefined;
       const allIncidents = await storage.getIncidents(divisionId);
@@ -196,8 +215,8 @@ export async function registerRoutes(
     }
   });
 
-  // Create incident
-  app.post("/api/incidents", async (req, res) => {
+  // Create incident (admin only)
+  app.post("/api/incidents", isAdmin, async (req, res) => {
     try {
       const data = insertIncidentSchema.parse(req.body);
       const incident = await storage.createIncident(data);
@@ -211,8 +230,8 @@ export async function registerRoutes(
     }
   });
 
-  // Get agent logs
-  app.get("/api/agent-logs", async (req, res) => {
+  // Get agent logs (admin only)
+  app.get("/api/agent-logs", isAdmin, async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const logs = await storage.getAgentLogs(limit);
@@ -222,8 +241,8 @@ export async function registerRoutes(
     }
   });
 
-  // Create agent log
-  app.post("/api/agent-logs", async (req, res) => {
+  // Create agent log (admin only)
+  app.post("/api/agent-logs", isAdmin, async (req, res) => {
     try {
       const data = insertAgentLogSchema.parse(req.body);
       const log = await storage.createAgentLog(data);
@@ -237,8 +256,8 @@ export async function registerRoutes(
     }
   });
 
-  // Seed initial divisions (one-time setup)
-  app.post("/api/seed-divisions", async (req, res) => {
+  // Seed initial divisions (admin only, one-time setup)
+  app.post("/api/seed-divisions", isAdmin, async (req, res) => {
     try {
       const initialDivisions = [
         { name: "C.A.R.E.N.", description: "Automated Roadside Guardian", category: "Safety", status: "live", externalUrl: "https://carenalert.com", tier: 1 },
