@@ -361,17 +361,22 @@ function CFOAgentPanel() {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
 
   const runAnalysis = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/cfo/analyze", { method: "POST" });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.analysis) {
         setAnalysis(data.analysis);
+      } else {
+        setError(data.error || "Analysis failed - please try again");
       }
     } catch (e) {
       console.error("Analysis failed:", e);
+      setError("Network error - please refresh and try again");
     }
     setLoading(false);
   };
@@ -379,6 +384,7 @@ function CFOAgentPanel() {
   const askQuestion = async () => {
     if (!question.trim()) return;
     setAsking(true);
+    setError("");
     try {
       const res = await fetch("/api/cfo/ask", {
         method: "POST",
@@ -386,11 +392,14 @@ function CFOAgentPanel() {
         body: JSON.stringify({ question })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.answer) {
         setAnswer(data.answer);
+      } else {
+        setError(data.error || "Failed to get answer");
       }
     } catch (e) {
       console.error("Ask failed:", e);
+      setError("Network error - please try again");
     }
     setAsking(false);
   };
@@ -416,6 +425,12 @@ function CFOAgentPanel() {
           {loading ? "Analyzing..." : "Run Analysis"}
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="p-6 rounded-xl border border-[#DAA520]/30 bg-[#0B1B3F]/30">
