@@ -207,3 +207,6 @@ export type InsertAgentLog = z.infer<typeof insertAgentLogSchema>;
 
 // Auth schema (mandatory for Replit Auth)
 export * from "./models/auth";
+
+// Chat schema (for OpenAI integration)
+export * from "./models/chat";
