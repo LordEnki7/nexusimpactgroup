@@ -470,7 +470,7 @@ function CFOAgentPanel() {
             </button>
           </div>
           {answer && (
-            <div className="p-4 rounded-lg bg-black/30 border border-[#14C1D7]/10">
+            <div className="p-4 rounded-lg bg-black/30 border border-[#14C1D7]/10" data-testid="text-cfo-answer">
               <p className="text-sm text-gray-300 whitespace-pre-wrap">{answer}</p>
             </div>
           )}
@@ -480,7 +480,7 @@ function CFOAgentPanel() {
           <h3 className="text-sm font-bold text-[#DAA520] mb-4">Latest Analysis</h3>
           {analysis ? (
             <div className="space-y-4">
-              <div>
+              <div data-testid="text-cfo-summary">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Summary</p>
                 <p className="text-sm text-gray-300">{analysis.summary}</p>
               </div>
@@ -490,7 +490,7 @@ function CFOAgentPanel() {
                   <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Alerts</p>
                   <div className="space-y-2">
                     {analysis.alerts.map((alert: any, i: number) => (
-                      <div key={i} className={`p-2 rounded-lg text-xs ${
+                      <div key={i} data-testid={`text-cfo-alert-${i}`} className={`p-2 rounded-lg text-xs ${
                         alert.severity === "critical" ? "bg-red-500/20 text-red-400" :
                         alert.severity === "high" ? "bg-orange-500/20 text-orange-400" :
                         alert.severity === "medium" ? "bg-yellow-500/20 text-yellow-400" :
@@ -509,7 +509,7 @@ function CFOAgentPanel() {
                   <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Recommendations</p>
                   <ul className="space-y-1">
                     {analysis.recommendations.slice(0, 3).map((rec: string, i: number) => (
-                      <li key={i} className="text-xs text-gray-400 flex items-start gap-2">
+                      <li key={i} data-testid={`text-cfo-rec-${i}`} className="text-xs text-gray-400 flex items-start gap-2">
                         <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
                         {rec}
                       </li>
