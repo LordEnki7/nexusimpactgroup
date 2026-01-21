@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { isAuthenticated } from "./replit_integrations/auth";
+import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -289,6 +290,76 @@ export async function registerRoutes(
       res.json({ success: true, message: `Seeded ${created.length} divisions`, divisions: created });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to seed divisions" });
+    }
+  });
+
+  // ============================================
+  // CFO AGENT ENDPOINTS
+  // ============================================
+
+  // Run full CFO analysis
+  app.post("/api/cfo/analyze", isAdmin, async (req, res) => {
+    try {
+      const [divisions, financials, incidents] = await Promise.all([
+        storage.getDivisions(),
+        storage.getFinancialSnapshots(),
+        storage.getIncidents()
+      ]);
+
+      const analysis = await runCFOAnalysis({
+        divisions: divisions.map(d => ({
+          name: d.name,
+          status: d.status,
+          tier: d.tier || 3,
+          category: d.category
+        })),
+        financials: financials.map(f => ({
+          divisionId: f.divisionId,
+          period: f.period,
+          revenue: f.revenue,
+          costs: f.costs,
+          margin: f.margin,
+          subscribers: f.subscribers,
+          activeUsers: f.activeUsers
+        })),
+        incidents: incidents.map(i => ({
+          title: i.title,
+          severity: i.severity,
+          status: i.status,
+          divisionId: i.divisionId
+        }))
+      });
+
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("CFO analysis error:", error);
+      res.status(500).json({ success: false, error: "Failed to run CFO analysis" });
+    }
+  });
+
+  // Ask CFO a question
+  app.post("/api/cfo/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) {
+        return res.status(400).json({ success: false, error: "Question required" });
+      }
+      
+      const answer = await askCFO(question);
+      res.json({ success: true, answer });
+    } catch (error) {
+      console.error("CFO ask error:", error);
+      res.status(500).json({ success: false, error: "Failed to get answer" });
+    }
+  });
+
+  // Get CFO quick status
+  app.get("/api/cfo/status", isAdmin, async (req, res) => {
+    try {
+      const status = await getCFOQuickStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get status" });
     }
   });
 

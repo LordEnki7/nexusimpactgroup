@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type Division = {
   id: number;
@@ -367,6 +367,8 @@ export default function CommandCenter() {
                   </div>
                 </div>
               </div>
+
+              <CFOAgentPanel />
             </>
           )}
         </main>
@@ -378,6 +380,152 @@ export default function CommandCenter() {
             </p>
           </div>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+function CFOAgentPanel() {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [asking, setAsking] = useState(false);
+
+  const runAnalysis = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/cfo/analyze", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setAnalysis(data.analysis);
+      }
+    } catch (e) {
+      console.error("Analysis failed:", e);
+    }
+    setLoading(false);
+  };
+
+  const askQuestion = async () => {
+    if (!question.trim()) return;
+    setAsking(true);
+    try {
+      const res = await fetch("/api/cfo/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAnswer(data.answer);
+      }
+    } catch (e) {
+      console.error("Ask failed:", e);
+    }
+    setAsking(false);
+  };
+
+  return (
+    <div className="mt-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-[#DAA520] to-[#14C1D7]">
+            <DollarSign className="w-6 h-6 text-black" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold font-heading text-[#DAA520]">CFO Agent</h2>
+            <p className="text-xs text-gray-500 font-mono">Financial Intelligence</p>
+          </div>
+        </div>
+        <button
+          onClick={runAnalysis}
+          disabled={loading}
+          className="px-4 py-2 bg-[#DAA520] text-black font-bold rounded-lg hover:bg-[#DAA520]/80 transition-colors disabled:opacity-50"
+          data-testid="button-run-analysis"
+        >
+          {loading ? "Analyzing..." : "Run Analysis"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="p-6 rounded-xl border border-[#DAA520]/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-[#DAA520] mb-4">Ask the CFO</h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask about finances, strategy, or projections..."
+              className="flex-1 px-4 py-2 rounded-lg bg-black/50 border border-[#14C1D7]/20 text-white text-sm focus:outline-none focus:border-[#14C1D7]/50"
+              onKeyDown={(e) => e.key === "Enter" && askQuestion()}
+              data-testid="input-cfo-question"
+            />
+            <button
+              onClick={askQuestion}
+              disabled={asking}
+              className="px-4 py-2 bg-[#14C1D7] text-black font-bold rounded-lg hover:bg-[#14C1D7]/80 transition-colors disabled:opacity-50"
+              data-testid="button-ask-cfo"
+            >
+              {asking ? "..." : "Ask"}
+            </button>
+          </div>
+          {answer && (
+            <div className="p-4 rounded-lg bg-black/30 border border-[#14C1D7]/10">
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{answer}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 rounded-xl border border-[#DAA520]/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-[#DAA520] mb-4">Latest Analysis</h3>
+          {analysis ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Summary</p>
+                <p className="text-sm text-gray-300">{analysis.summary}</p>
+              </div>
+              
+              {analysis.alerts?.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Alerts</p>
+                  <div className="space-y-2">
+                    {analysis.alerts.map((alert: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-lg text-xs ${
+                        alert.severity === "critical" ? "bg-red-500/20 text-red-400" :
+                        alert.severity === "high" ? "bg-orange-500/20 text-orange-400" :
+                        alert.severity === "medium" ? "bg-yellow-500/20 text-yellow-400" :
+                        "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        <AlertTriangle className="w-3 h-3 inline mr-1" />
+                        {alert.message}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {analysis.recommendations?.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Recommendations</p>
+                  <ul className="space-y-1">
+                    {analysis.recommendations.slice(0, 3).map((rec: string, i: number) => (
+                      <li key={i} className="text-xs text-gray-400 flex items-start gap-2">
+                        <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <DollarSign className="w-10 h-10 text-[#DAA520]/30 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No analysis yet</p>
+              <p className="text-xs text-gray-600">Click "Run Analysis" to get started</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
