@@ -11,12 +11,27 @@ import {
   type InsertCallbackRequest,
   type BlogPost,
   type InsertBlogPost,
+  type Division,
+  type InsertDivision,
+  type DivisionMetric,
+  type InsertDivisionMetric,
+  type Incident,
+  type InsertIncident,
+  type FinancialSnapshot,
+  type InsertFinancialSnapshot,
+  type AgentLog,
+  type InsertAgentLog,
   users,
   inquiries,
   subscribers,
   quoteRequests,
   callbackRequests,
-  blogPosts
+  blogPosts,
+  divisions,
+  divisionMetrics,
+  incidents,
+  financialSnapshots,
+  agentLogs
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc } from "drizzle-orm";
@@ -41,6 +56,22 @@ export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   getBlogPosts(): Promise<BlogPost[]>;
   getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
+
+  getDivisions(): Promise<Division[]>;
+  getDivision(id: number): Promise<Division | undefined>;
+  createDivision(division: InsertDivision): Promise<Division>;
+  
+  getDivisionMetrics(divisionId?: number): Promise<DivisionMetric[]>;
+  createDivisionMetric(metric: InsertDivisionMetric): Promise<DivisionMetric>;
+  
+  getIncidents(divisionId?: number): Promise<Incident[]>;
+  createIncident(incident: InsertIncident): Promise<Incident>;
+  
+  getFinancialSnapshots(divisionId?: number): Promise<FinancialSnapshot[]>;
+  createFinancialSnapshot(snapshot: InsertFinancialSnapshot): Promise<FinancialSnapshot>;
+  
+  getAgentLogs(limit?: number): Promise<AgentLog[]>;
+  createAgentLog(log: InsertAgentLog): Promise<AgentLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -108,6 +139,65 @@ export class DatabaseStorage implements IStorage {
   async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
     const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
     return post;
+  }
+
+  async getDivisions(): Promise<Division[]> {
+    return await db.select().from(divisions).orderBy(divisions.tier, divisions.name);
+  }
+
+  async getDivision(id: number): Promise<Division | undefined> {
+    const [division] = await db.select().from(divisions).where(eq(divisions.id, id));
+    return division;
+  }
+
+  async createDivision(division: InsertDivision): Promise<Division> {
+    const [newDivision] = await db.insert(divisions).values(division).returning();
+    return newDivision;
+  }
+
+  async getDivisionMetrics(divisionId?: number): Promise<DivisionMetric[]> {
+    if (divisionId) {
+      return await db.select().from(divisionMetrics).where(eq(divisionMetrics.divisionId, divisionId)).orderBy(desc(divisionMetrics.recordedAt));
+    }
+    return await db.select().from(divisionMetrics).orderBy(desc(divisionMetrics.recordedAt));
+  }
+
+  async createDivisionMetric(metric: InsertDivisionMetric): Promise<DivisionMetric> {
+    const [newMetric] = await db.insert(divisionMetrics).values(metric).returning();
+    return newMetric;
+  }
+
+  async getIncidents(divisionId?: number): Promise<Incident[]> {
+    if (divisionId) {
+      return await db.select().from(incidents).where(eq(incidents.divisionId, divisionId)).orderBy(desc(incidents.createdAt));
+    }
+    return await db.select().from(incidents).orderBy(desc(incidents.createdAt));
+  }
+
+  async createIncident(incident: InsertIncident): Promise<Incident> {
+    const [newIncident] = await db.insert(incidents).values(incident).returning();
+    return newIncident;
+  }
+
+  async getFinancialSnapshots(divisionId?: number): Promise<FinancialSnapshot[]> {
+    if (divisionId) {
+      return await db.select().from(financialSnapshots).where(eq(financialSnapshots.divisionId, divisionId)).orderBy(desc(financialSnapshots.recordedAt));
+    }
+    return await db.select().from(financialSnapshots).orderBy(desc(financialSnapshots.recordedAt));
+  }
+
+  async createFinancialSnapshot(snapshot: InsertFinancialSnapshot): Promise<FinancialSnapshot> {
+    const [newSnapshot] = await db.insert(financialSnapshots).values(snapshot).returning();
+    return newSnapshot;
+  }
+
+  async getAgentLogs(limit: number = 50): Promise<AgentLog[]> {
+    return await db.select().from(agentLogs).orderBy(desc(agentLogs.createdAt)).limit(limit);
+  }
+
+  async createAgentLog(log: InsertAgentLog): Promise<AgentLog> {
+    const [newLog] = await db.insert(agentLogs).values(log).returning();
+    return newLog;
   }
 }
 

@@ -1,7 +1,15 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
-import { insertInquirySchema, insertSubscriberSchema, insertQuoteRequestSchema, insertCallbackRequestSchema } from "@shared/schema";
+import { 
+  insertInquirySchema, 
+  insertSubscriberSchema, 
+  insertQuoteRequestSchema, 
+  insertCallbackRequestSchema,
+  insertDivisionSchema,
+  insertIncidentSchema,
+  insertAgentLogSchema
+} from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -109,6 +117,159 @@ export async function registerRoutes(
       res.json({ success: true, post });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to fetch blog post" });
+    }
+  });
+
+  // ============================================
+  // NIG CORE COMMAND CENTER ENDPOINTS
+  // ============================================
+
+  // Get dashboard overview
+  app.get("/api/dashboard", async (req, res) => {
+    try {
+      const [allDivisions, allMetrics, allIncidents, financials, logs] = await Promise.all([
+        storage.getDivisions(),
+        storage.getDivisionMetrics(),
+        storage.getIncidents(),
+        storage.getFinancialSnapshots(),
+        storage.getAgentLogs(10)
+      ]);
+
+      const liveDivisions = allDivisions.filter(d => d.status === "live").length;
+      const openIncidents = allIncidents.filter(i => i.status === "open").length;
+      
+      res.json({
+        success: true,
+        data: {
+          divisions: allDivisions,
+          metrics: allMetrics,
+          incidents: allIncidents,
+          financials: financials,
+          agentLogs: logs,
+          summary: {
+            totalDivisions: allDivisions.length,
+            liveDivisions,
+            comingSoonDivisions: allDivisions.length - liveDivisions,
+            openIncidents,
+            totalIncidents: allIncidents.length
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  // Get all divisions
+  app.get("/api/divisions", async (req, res) => {
+    try {
+      const allDivisions = await storage.getDivisions();
+      res.json({ success: true, divisions: allDivisions });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch divisions" });
+    }
+  });
+
+  // Create a division
+  app.post("/api/divisions", async (req, res) => {
+    try {
+      const data = insertDivisionSchema.parse(req.body);
+      const division = await storage.createDivision(data);
+      res.json({ success: true, division });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ success: false, errors: error.errors });
+      } else {
+        res.status(500).json({ success: false, error: "Failed to create division" });
+      }
+    }
+  });
+
+  // Get incidents
+  app.get("/api/incidents", async (req, res) => {
+    try {
+      const divisionId = req.query.divisionId ? parseInt(req.query.divisionId as string) : undefined;
+      const allIncidents = await storage.getIncidents(divisionId);
+      res.json({ success: true, incidents: allIncidents });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch incidents" });
+    }
+  });
+
+  // Create incident
+  app.post("/api/incidents", async (req, res) => {
+    try {
+      const data = insertIncidentSchema.parse(req.body);
+      const incident = await storage.createIncident(data);
+      res.json({ success: true, incident });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ success: false, errors: error.errors });
+      } else {
+        res.status(500).json({ success: false, error: "Failed to create incident" });
+      }
+    }
+  });
+
+  // Get agent logs
+  app.get("/api/agent-logs", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const logs = await storage.getAgentLogs(limit);
+      res.json({ success: true, logs });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch agent logs" });
+    }
+  });
+
+  // Create agent log
+  app.post("/api/agent-logs", async (req, res) => {
+    try {
+      const data = insertAgentLogSchema.parse(req.body);
+      const log = await storage.createAgentLog(data);
+      res.json({ success: true, log });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ success: false, errors: error.errors });
+      } else {
+        res.status(500).json({ success: false, error: "Failed to create agent log" });
+      }
+    }
+  });
+
+  // Seed initial divisions (one-time setup)
+  app.post("/api/seed-divisions", async (req, res) => {
+    try {
+      const initialDivisions = [
+        { name: "C.A.R.E.N.", description: "Automated Roadside Guardian", category: "Safety", status: "live", externalUrl: "https://carenalert.com", tier: 1 },
+        { name: "Real Pulse Verifier", description: "True Identity Validation", category: "Security", status: "coming_soon", tier: 2 },
+        { name: "My Life Assistant", description: "AI Personal Concierge", category: "AI", status: "live", externalUrl: "https://mylifeassistant.vip", tier: 1 },
+        { name: "The Remedy Club", description: "Credit & Debt Freedom", category: "Finance", status: "live", externalUrl: "https://theremedyclub.vip", tier: 1 },
+        { name: "Rent-A-Buddy", description: "Platonic Connection", category: "Social", status: "live", externalUrl: "https://rent-a-buddy.info", tier: 2 },
+        { name: "Eternal Chase", description: "Immersive Entertainment", category: "Entertainment", status: "live", externalUrl: "https://eternalchase.stream", tier: 2 },
+        { name: "Project DNA Music", description: "Sonic Engineering", category: "Entertainment", status: "live", externalUrl: "https://projectdnamusic.info", tier: 2 },
+        { name: "Zapp Marketing", description: "Global Manufacturing", category: "Trade", status: "live", externalUrl: "https://zapp-ecommerce.online", tier: 2 },
+        { name: "Studio Artist Live", description: "Creative Performance Platform", category: "Entertainment", status: "live", externalUrl: "https://studioartistlive.com", tier: 2 },
+        { name: "Right Time Notary", description: "Mobile Notary Services", category: "Services", status: "coming_soon", tier: 3 },
+        { name: "The Shock Factor", description: "Podcast Entertainment", category: "Entertainment", status: "coming_soon", tier: 3 },
+        { name: "ClearSpace", description: "iPhone Image Cleaner", category: "Utility", status: "live", externalUrl: "https://clearspace.photos", tier: 2 },
+        { name: "CAD and Me", description: "Coronary Artery Disease Audiobook", category: "Health", status: "coming_soon", tier: 3 },
+        { name: "NIG Core", description: "Central Intelligence Hub", category: "Core", status: "active", tier: 0 }
+      ];
+
+      const created = [];
+      for (const div of initialDivisions) {
+        try {
+          const division = await storage.createDivision(div);
+          created.push(division);
+        } catch (e) {
+          // Skip if already exists
+        }
+      }
+      
+      res.json({ success: true, message: `Seeded ${created.length} divisions`, divisions: created });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to seed divisions" });
     }
   });
 
