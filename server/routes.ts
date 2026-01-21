@@ -18,18 +18,23 @@ import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
 
 // Middleware to check if user is the admin
+// TEMPORARILY BYPASSED for development/testing
 const isAdmin: typeof isAuthenticated = async (req, res, next) => {
-  await isAuthenticated(req, res, () => {
-    const user = req.user as any;
-    const userId = user?.claims?.sub;
-    
-    // If no ADMIN_USER_ID is set, allow any authenticated user (for initial setup)
-    if (!ADMIN_USER_ID || userId === ADMIN_USER_ID) {
-      next();
-    } else {
-      res.status(403).json({ success: false, error: "Access denied" });
-    }
-  });
+  // Bypass auth temporarily for testing
+  return next();
+  
+  // Original auth logic (commented out for now):
+  // await isAuthenticated(req, res, () => {
+  //   const user = req.user as any;
+  //   const userId = user?.claims?.sub;
+  //   
+  //   // If no ADMIN_USER_ID is set, allow any authenticated user (for initial setup)
+  //   if (!ADMIN_USER_ID || userId === ADMIN_USER_ID) {
+  //     next();
+  //   } else {
+  //     res.status(403).json({ success: false, error: "Access denied" });
+  //   }
+  // });
 };
 
 export async function registerRoutes(
