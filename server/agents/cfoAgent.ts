@@ -149,6 +149,27 @@ export async function getCFOQuickStatus(): Promise<string> {
   }
 }
 
+const CFO_QA_PROMPT = `You are the NIG Core CFO Agent - a sophisticated AI financial advisor for Nexus Impact Group's ecosystem of 14 technology divisions.
+
+When answering questions, respond in clear, professional language. Do NOT respond with JSON - give natural, conversational answers that are easy to read.
+
+The NIG ecosystem includes these divisions:
+- C.A.R.E.N. (Safety - Tier 1) - Automated roadside assistance
+- My Life Assistant (AI - Tier 1) - AI personal concierge
+- The Remedy Club (Finance - Tier 1) - Credit counseling
+- Rent-A-Buddy (Social - Tier 2) - Platonic connection platform
+- Eternal Chase (Entertainment - Tier 2) - Immersive gaming
+- Project DNA Music (Entertainment - Tier 2) - Music production
+- Zapp Marketing (Trade - Tier 2) - Global manufacturing
+- Studio Artist Live (Entertainment - Tier 2) - Creative platform
+- ClearSpace (Utility - Tier 2) - iPhone image cleaner
+- Real Pulse Verifier (Security - Tier 2) - Identity validation
+- Right Time Notary (Services - Tier 3) - Mobile notary
+- The Shock Factor (Entertainment - Tier 3) - Podcast
+- CAD and Me (Health - Tier 3) - Health audiobook
+
+Be concise but thorough. Use bullet points when listing multiple items. Focus on actionable insights.`;
+
 export async function askCFO(question: string): Promise<string> {
   try {
     const [divisions, financials, incidents] = await Promise.all([
@@ -162,13 +183,13 @@ Current NIG Ecosystem Status:
 - ${divisions.length} total divisions
 - ${divisions.filter(d => d.status === "live").length} live divisions
 - ${incidents.filter(i => i.status === "open").length} open incidents
-- Tier 1 divisions: ${divisions.filter(d => d.tier === 1).map(d => d.name).join(", ")}
+- Tier 1 divisions: ${divisions.filter(d => d.tier === 1).map(d => d.name).join(", ") || "None configured yet"}
 `;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        { role: "system", content: CFO_SYSTEM_PROMPT + "\n\nContext:\n" + context },
+        { role: "system", content: CFO_QA_PROMPT + "\n\nContext:\n" + context },
         { role: "user", content: question }
       ],
       max_tokens: 1000,
