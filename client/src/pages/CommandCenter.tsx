@@ -17,7 +17,9 @@ import {
   LogOut,
   Lock,
   Settings,
-  Gauge
+  Gauge,
+  Code,
+  Server
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -340,9 +342,10 @@ export default function CommandCenter() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <CFOAgentPanel />
                 <COOAgentPanel />
+                <CTOAgentPanel />
               </div>
             </>
           )}
@@ -685,6 +688,187 @@ function COOAgentPanel() {
           ) : (
             <div className="text-center py-8">
               <Gauge className="w-10 h-10 text-[#14C1D7]/30 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No analysis yet</p>
+              <p className="text-xs text-gray-600">Click "Run Analysis" to get started</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CTOAgentPanel() {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
+
+  const runAnalysis = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/cto/analyze", { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.analysis) {
+        setAnalysis(data.analysis);
+      } else {
+        setError(data.error || "Analysis failed - please try again");
+      }
+    } catch (e) {
+      console.error("CTO Analysis failed:", e);
+      setError("Network error - please refresh and try again");
+    }
+    setLoading(false);
+  };
+
+  const askQuestion = async () => {
+    if (!question.trim()) return;
+    setAsking(true);
+    setError("");
+    try {
+      const res = await fetch("/api/cto/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (data.success && data.answer) {
+        setAnswer(data.answer);
+      } else {
+        setError(data.error || "Failed to get answer");
+      }
+    } catch (e) {
+      console.error("CTO Ask failed:", e);
+      setError("Network error - please try again");
+    }
+    setAsking(false);
+  };
+
+  const getHealthColor = (health: string) => {
+    switch (health) {
+      case "excellent": return "text-green-400 bg-green-500/20";
+      case "good": return "text-emerald-400 bg-emerald-500/20";
+      case "fair": return "text-yellow-400 bg-yellow-500/20";
+      case "poor": return "text-orange-400 bg-orange-500/20";
+      case "critical": return "text-red-400 bg-red-500/20";
+      default: return "text-gray-400 bg-gray-500/20";
+    }
+  };
+
+  return (
+    <div className="mt-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-[#0B1B3F]">
+            <Code className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold font-heading text-emerald-400">CTO Agent</h2>
+            <p className="text-xs text-gray-500 font-mono">Technical Intelligence</p>
+          </div>
+        </div>
+        <button
+          onClick={runAnalysis}
+          disabled={loading}
+          className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-500/80 transition-colors disabled:opacity-50"
+          data-testid="button-run-cto-analysis"
+        >
+          {loading ? "Analyzing..." : "Run Analysis"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6">
+        <div className="p-6 rounded-xl border border-emerald-500/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-emerald-400 mb-4">Ask the CTO</h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask about architecture, security, or tech stack..."
+              className="flex-1 px-4 py-2 rounded-lg bg-black/50 border border-emerald-500/20 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+              onKeyDown={(e) => e.key === "Enter" && askQuestion()}
+              data-testid="input-cto-question"
+            />
+            <button
+              onClick={askQuestion}
+              disabled={asking}
+              className="px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-500/80 transition-colors disabled:opacity-50"
+              data-testid="button-ask-cto"
+            >
+              {asking ? "..." : "Ask"}
+            </button>
+          </div>
+          {answer && (
+            <div className="p-4 rounded-lg bg-black/30 border border-emerald-500/10" data-testid="text-cto-answer">
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{answer}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 rounded-xl border border-emerald-500/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-emerald-400 mb-4">Technical Status</h3>
+          {analysis ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 uppercase tracking-wider">Tech Health</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getHealthColor(analysis.techHealth)}`}>
+                  {analysis.techHealth}
+                </span>
+              </div>
+
+              {analysis.systemStatus && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Uptime</p>
+                    <p className="text-xs text-emerald-400 font-mono">{analysis.systemStatus.uptime}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Security</p>
+                    <p className="text-xs text-emerald-400 font-mono">{analysis.systemStatus.security}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Performance</p>
+                    <p className="text-xs text-emerald-400 font-mono">{analysis.systemStatus.performance}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div data-testid="text-cto-summary">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Summary</p>
+                <p className="text-sm text-gray-300">{analysis.summary}</p>
+              </div>
+              
+              {analysis.securityAlerts?.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Security Alerts</p>
+                  <div className="space-y-1">
+                    {analysis.securityAlerts.slice(0, 3).map((alert: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-lg text-xs ${
+                        alert.severity === "critical" ? "bg-red-500/20 text-red-400" :
+                        alert.severity === "high" ? "bg-orange-500/20 text-orange-400" :
+                        "bg-yellow-500/20 text-yellow-400"
+                      }`}>
+                        <Shield className="w-3 h-3 inline mr-1" />
+                        {alert.message}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Server className="w-10 h-10 text-emerald-500/30 mx-auto mb-2" />
               <p className="text-sm text-gray-500">No analysis yet</p>
               <p className="text-xs text-gray-600">Click "Run Analysis" to get started</p>
             </div>

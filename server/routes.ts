@@ -14,6 +14,7 @@ import { z } from "zod";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
 import { runCOOAnalysis, askCOO, getCOOQuickStatus } from "./agents/cooAgent";
+import { runCTOAnalysis, askCTO, getCTOQuickStatus } from "./agents/ctoAgent";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -432,6 +433,69 @@ export async function registerRoutes(
   app.get("/api/coo/status", isAdmin, async (req, res) => {
     try {
       const status = await getCOOQuickStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get status" });
+    }
+  });
+
+  // ============================================
+  // CTO AGENT ENDPOINTS
+  // ============================================
+
+  // Run full CTO technical analysis
+  app.post("/api/cto/analyze", isAdmin, async (req, res) => {
+    try {
+      const [divisions, incidents] = await Promise.all([
+        storage.getDivisions(),
+        storage.getIncidents()
+      ]);
+
+      const analysis = await runCTOAnalysis({
+        divisions: divisions.map(d => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          tier: d.tier || 3,
+          category: d.category,
+          externalUrl: d.externalUrl
+        })),
+        incidents: incidents.map(i => ({
+          id: i.id,
+          title: i.title,
+          severity: i.severity,
+          status: i.status,
+          divisionId: i.divisionId
+        }))
+      });
+
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("CTO analysis error:", error);
+      res.status(500).json({ success: false, error: "Failed to run CTO analysis" });
+    }
+  });
+
+  // Ask CTO a question
+  app.post("/api/cto/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) {
+        return res.status(400).json({ success: false, error: "Question required" });
+      }
+      
+      const answer = await askCTO(question);
+      res.json({ success: true, answer });
+    } catch (error) {
+      console.error("CTO ask error:", error);
+      res.status(500).json({ success: false, error: "Failed to get answer" });
+    }
+  });
+
+  // Get CTO quick status
+  app.get("/api/cto/status", isAdmin, async (req, res) => {
+    try {
+      const status = await getCTOQuickStatus();
       res.json({ success: true, status });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get status" });
