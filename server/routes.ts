@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
+import { runCOOAnalysis, askCOO, getCOOQuickStatus } from "./agents/cooAgent";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -362,6 +363,75 @@ export async function registerRoutes(
   app.get("/api/cfo/status", isAdmin, async (req, res) => {
     try {
       const status = await getCFOQuickStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get status" });
+    }
+  });
+
+  // ============================================
+  // COO AGENT ENDPOINTS
+  // ============================================
+
+  // Run full COO operational analysis
+  app.post("/api/coo/analyze", isAdmin, async (req, res) => {
+    try {
+      const [divisions, incidents, agentLogs] = await Promise.all([
+        storage.getDivisions(),
+        storage.getIncidents(),
+        storage.getAgentLogs()
+      ]);
+
+      const analysis = await runCOOAnalysis({
+        divisions: divisions.map(d => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          tier: d.tier || 3,
+          category: d.category,
+          externalUrl: d.externalUrl
+        })),
+        incidents: incidents.map(i => ({
+          id: i.id,
+          title: i.title,
+          severity: i.severity,
+          status: i.status,
+          divisionId: i.divisionId
+        })),
+        agentLogs: agentLogs.map(l => ({
+          agentName: l.agentName,
+          action: l.action,
+          status: l.status
+        }))
+      });
+
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("COO analysis error:", error);
+      res.status(500).json({ success: false, error: "Failed to run COO analysis" });
+    }
+  });
+
+  // Ask COO a question
+  app.post("/api/coo/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) {
+        return res.status(400).json({ success: false, error: "Question required" });
+      }
+      
+      const answer = await askCOO(question);
+      res.json({ success: true, answer });
+    } catch (error) {
+      console.error("COO ask error:", error);
+      res.status(500).json({ success: false, error: "Failed to get answer" });
+    }
+  });
+
+  // Get COO quick status
+  app.get("/api/coo/status", isAdmin, async (req, res) => {
+    try {
+      const status = await getCOOQuickStatus();
       res.json({ success: true, status });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get status" });
