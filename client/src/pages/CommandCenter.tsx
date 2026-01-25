@@ -23,7 +23,14 @@ import {
   Megaphone,
   BarChart3,
   UserCog,
-  Briefcase
+  Briefcase,
+  Layers,
+  Play,
+  Pause,
+  Bell,
+  Search,
+  FileCode,
+  Share2
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -352,6 +359,11 @@ export default function CommandCenter() {
                 <CTOAgentPanel />
                 <CMOAgentPanel />
                 <CHROAgentPanel />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                <DivisionAgentsPanel />
+                <SchedulerPanel />
               </div>
             </>
           )}
@@ -1239,6 +1251,320 @@ function CHROAgentPanel() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DivisionAgentsPanel() {
+  const [cmoAgents, setCmoAgents] = useState<any[]>([]);
+  const [ctoAgents, setCtoAgents] = useState<any[]>([]);
+  const [loading, setLoading] = useState({ cmo: false, cto: false });
+  const [error, setError] = useState("");
+
+  const runCMODivisionAgents = async () => {
+    setLoading(prev => ({ ...prev, cmo: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/division/cmo/all", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setCmoAgents(data.analyses || []);
+      } else {
+        setError(data.error || "Failed to run CMO division agents");
+      }
+    } catch (e) {
+      setError("Network error");
+    }
+    setLoading(prev => ({ ...prev, cmo: false }));
+  };
+
+  const runCTODivisionAgents = async () => {
+    setLoading(prev => ({ ...prev, cto: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/division/cto/all", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setCtoAgents(data.analyses || []);
+      } else {
+        setError(data.error || "Failed to run CTO division agents");
+      }
+    } catch (e) {
+      setError("Network error");
+    }
+    setLoading(prev => ({ ...prev, cto: false }));
+  };
+
+  const getHealthColor = (health: string) => {
+    switch (health) {
+      case "excellent": return "text-green-400";
+      case "good": return "text-emerald-400";
+      case "fair": return "text-yellow-400";
+      case "poor": return "text-orange-400";
+      case "critical": return "text-red-400";
+      default: return "text-gray-400";
+    }
+  };
+
+  return (
+    <div className="p-6 rounded-xl border border-[#14C1D7]/30 bg-[#0B1B3F]/50">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 rounded-lg bg-gradient-to-br from-[#14C1D7] to-[#0B1B3F]">
+          <Layers className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold font-heading text-[#14C1D7]">Division Agents</h2>
+          <p className="text-xs text-gray-500 font-mono">Specialized sub-agents</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="p-4 rounded-lg border border-purple-500/20 bg-black/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-bold text-purple-400">CMO Division</span>
+            </div>
+            <button
+              onClick={runCMODivisionAgents}
+              disabled={loading.cmo}
+              className="px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-500/80 disabled:opacity-50"
+              data-testid="button-run-cmo-division"
+            >
+              {loading.cmo ? "Running..." : "Run All"}
+            </button>
+          </div>
+          {cmoAgents.length > 0 ? (
+            <div className="space-y-2">
+              {cmoAgents.map((agent, i) => (
+                <div key={i} className="p-2 rounded bg-black/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {agent.agentName === "Social Media Agent" && <Share2 className="w-3 h-3 text-purple-400" />}
+                    {agent.agentName === "SEO Agent" && <Search className="w-3 h-3 text-purple-400" />}
+                    {agent.agentName === "Content Agent" && <FileCode className="w-3 h-3 text-purple-400" />}
+                    <span className="text-xs text-gray-300">{agent.agentName}</span>
+                  </div>
+                  <span className={`text-xs font-bold uppercase ${getHealthColor(agent.health)}`}>
+                    {agent.health}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">Click "Run All" to activate division agents</p>
+          )}
+        </div>
+
+        <div className="p-4 rounded-lg border border-emerald-500/20 bg-black/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Code className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-bold text-emerald-400">CTO Division</span>
+            </div>
+            <button
+              onClick={runCTODivisionAgents}
+              disabled={loading.cto}
+              className="px-3 py-1 text-xs bg-emerald-500 text-black rounded hover:bg-emerald-500/80 disabled:opacity-50"
+              data-testid="button-run-cto-division"
+            >
+              {loading.cto ? "Running..." : "Run All"}
+            </button>
+          </div>
+          {ctoAgents.length > 0 ? (
+            <div className="space-y-2">
+              {ctoAgents.map((agent, i) => (
+                <div key={i} className="p-2 rounded bg-black/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {agent.agentName === "DevOps Agent" && <Server className="w-3 h-3 text-emerald-400" />}
+                    {agent.agentName === "Security Agent" && <Shield className="w-3 h-3 text-emerald-400" />}
+                    {agent.agentName === "Architecture Agent" && <Layers className="w-3 h-3 text-emerald-400" />}
+                    <span className="text-xs text-gray-300">{agent.agentName}</span>
+                  </div>
+                  <span className={`text-xs font-bold uppercase ${getHealthColor(agent.health)}`}>
+                    {agent.health}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">Click "Run All" to activate division agents</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SchedulerPanel() {
+  const [status, setStatus] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch("/api/scheduler/status");
+      const data = await res.json();
+      if (data.success) setStatus(data.status);
+    } catch (e) {
+      console.error("Failed to fetch scheduler status");
+    }
+  };
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await fetch("/api/alerts");
+      const data = await res.json();
+      if (data.success) setAlerts(data.alerts || []);
+    } catch (e) {
+      console.error("Failed to fetch alerts");
+    }
+  };
+
+  const toggleScheduler = async () => {
+    setLoading(true);
+    try {
+      const endpoint = status?.isRunning ? "/api/scheduler/stop" : "/api/scheduler/start";
+      await fetch(endpoint, { method: "POST" });
+      await fetchStatus();
+    } catch (e) {
+      console.error("Failed to toggle scheduler");
+    }
+    setLoading(false);
+  };
+
+  const runTask = async (taskId: string) => {
+    try {
+      await fetch(`/api/scheduler/run/${taskId}`, { method: "POST" });
+      await fetchStatus();
+    } catch (e) {
+      console.error("Failed to run task");
+    }
+  };
+
+  const resolveAlert = async (alertId: string) => {
+    try {
+      await fetch(`/api/alerts/${alertId}/resolve`, { method: "POST" });
+      await fetchAlerts();
+    } catch (e) {
+      console.error("Failed to resolve alert");
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    fetchAlerts();
+    const interval = setInterval(() => {
+      fetchStatus();
+      fetchAlerts();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="p-6 rounded-xl border border-[#DAA520]/30 bg-[#0B1B3F]/50">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-[#DAA520] to-[#0B1B3F]">
+            <Clock className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold font-heading text-[#DAA520]">Scheduler & Alerts</h2>
+            <p className="text-xs text-gray-500 font-mono">Automated tasks</p>
+          </div>
+        </div>
+        <button
+          onClick={toggleScheduler}
+          disabled={loading}
+          className={`px-4 py-2 font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 ${
+            status?.isRunning 
+              ? "bg-red-500 text-white hover:bg-red-500/80" 
+              : "bg-green-500 text-black hover:bg-green-500/80"
+          }`}
+          data-testid="button-toggle-scheduler"
+        >
+          {status?.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          {loading ? "..." : status?.isRunning ? "Stop" : "Start"}
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${status?.isRunning ? "bg-green-500 animate-pulse" : "bg-gray-500"}`} />
+            <span className="text-gray-400">{status?.isRunning ? "Running" : "Stopped"}</span>
+          </div>
+          <div className="text-gray-500">
+            {status?.taskCount || 0} tasks | {alerts.length} alerts
+          </div>
+        </div>
+
+        {status?.tasks && status.tasks.length > 0 && (
+          <div className="p-4 rounded-lg border border-[#DAA520]/20 bg-black/20">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Scheduled Tasks</p>
+            <div className="space-y-2">
+              {status.tasks.map((task: any) => (
+                <div key={task.id} className="flex items-center justify-between p-2 rounded bg-black/30">
+                  <div>
+                    <p className="text-xs text-gray-300">{task.name}</p>
+                    {task.lastRun && (
+                      <p className="text-[10px] text-gray-500">
+                        Last: {new Date(task.lastRun).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => runTask(task.id)}
+                    className="px-2 py-1 text-[10px] bg-[#DAA520] text-black rounded hover:bg-[#DAA520]/80"
+                  >
+                    Run Now
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {alerts.length > 0 && (
+          <div className="p-4 rounded-lg border border-red-500/20 bg-black/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Bell className="w-3 h-3 text-red-400" />
+              <p className="text-xs text-red-400 uppercase tracking-wider">Active Alerts</p>
+            </div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {alerts.slice(0, 5).map((alert: any) => (
+                <div key={alert.id} className={`p-2 rounded text-xs flex items-center justify-between ${
+                  alert.type === "critical" ? "bg-red-500/20 text-red-400" :
+                  alert.type === "warning" ? "bg-yellow-500/20 text-yellow-400" :
+                  "bg-blue-500/20 text-blue-400"
+                }`}>
+                  <div>
+                    <span className="font-bold">{alert.source}:</span> {alert.message}
+                  </div>
+                  <button
+                    onClick={() => resolveAlert(alert.id)}
+                    className="text-[10px] underline hover:no-underline"
+                  >
+                    Resolve
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {alerts.length === 0 && (
+          <div className="text-center py-4">
+            <CheckCircle className="w-8 h-8 text-green-500/30 mx-auto mb-2" />
+            <p className="text-xs text-gray-500">No active alerts</p>
+          </div>
+        )}
       </div>
     </div>
   );
