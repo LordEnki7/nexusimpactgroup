@@ -19,6 +19,7 @@ import { runCMOAnalysis, askCMO, getCMOQuickStatus } from "./agents/cmoAgent";
 import { runCHROAnalysis, askCHRO, getCHROQuickStatus } from "./agents/chroAgent";
 import { runAllCMODivisionAgents, runSocialMediaAnalysis, runSEOAnalysis, runContentAnalysis } from "./agents/division/cmoDivisionAgents";
 import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArchitectureAnalysis } from "./agents/division/ctoDivisionAgents";
+import { scheduler } from "./agents/scheduler";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -700,6 +701,73 @@ export async function registerRoutes(
       res.status(500).json({ success: false, error: "Failed to run analysis" });
     }
   });
+
+  // ============================================
+  // SCHEDULER & ALERT ENDPOINTS
+  // ============================================
+
+  // Get scheduler status
+  app.get("/api/scheduler/status", isAdmin, async (req, res) => {
+    try {
+      const status = scheduler.getStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get status" });
+    }
+  });
+
+  // Start scheduler
+  app.post("/api/scheduler/start", isAdmin, async (req, res) => {
+    try {
+      await scheduler.start();
+      res.json({ success: true, message: "Scheduler started" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to start scheduler" });
+    }
+  });
+
+  // Stop scheduler
+  app.post("/api/scheduler/stop", isAdmin, async (req, res) => {
+    try {
+      scheduler.stop();
+      res.json({ success: true, message: "Scheduler stopped" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to stop scheduler" });
+    }
+  });
+
+  // Run a specific task now
+  app.post("/api/scheduler/run/:taskId", isAdmin, async (req, res) => {
+    try {
+      await scheduler.runTaskNow(req.params.taskId);
+      res.json({ success: true, message: "Task executed" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run task" });
+    }
+  });
+
+  // Get alerts
+  app.get("/api/alerts", isAdmin, async (req, res) => {
+    try {
+      const alerts = scheduler.getAlerts(req.query.includeResolved === "true");
+      res.json({ success: true, alerts });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get alerts" });
+    }
+  });
+
+  // Resolve an alert
+  app.post("/api/alerts/:alertId/resolve", isAdmin, async (req, res) => {
+    try {
+      scheduler.resolveAlert(req.params.alertId);
+      res.json({ success: true, message: "Alert resolved" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to resolve alert" });
+    }
+  });
+
+  // Auto-start scheduler
+  scheduler.start();
 
   return httpServer;
 }
