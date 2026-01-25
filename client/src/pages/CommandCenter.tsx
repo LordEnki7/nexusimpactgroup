@@ -21,7 +21,9 @@ import {
   Code,
   Server,
   Megaphone,
-  BarChart3
+  BarChart3,
+  UserCog,
+  Briefcase
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -344,11 +346,12 @@ export default function CommandCenter() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 <CFOAgentPanel />
                 <COOAgentPanel />
                 <CTOAgentPanel />
                 <CMOAgentPanel />
+                <CHROAgentPanel />
               </div>
             </>
           )}
@@ -1049,6 +1052,188 @@ function CMOAgentPanel() {
           ) : (
             <div className="text-center py-8">
               <BarChart3 className="w-10 h-10 text-purple-500/30 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No analysis yet</p>
+              <p className="text-xs text-gray-600">Click "Run Analysis" to get started</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CHROAgentPanel() {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
+
+  const runAnalysis = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/chro/analyze", { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.analysis) {
+        setAnalysis(data.analysis);
+      } else {
+        setError(data.error || "Analysis failed - please try again");
+      }
+    } catch (e) {
+      console.error("CHRO Analysis failed:", e);
+      setError("Network error - please refresh and try again");
+    }
+    setLoading(false);
+  };
+
+  const askQuestion = async () => {
+    if (!question.trim()) return;
+    setAsking(true);
+    setError("");
+    try {
+      const res = await fetch("/api/chro/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (data.success && data.answer) {
+        setAnswer(data.answer);
+      } else {
+        setError(data.error || "Failed to get answer");
+      }
+    } catch (e) {
+      console.error("CHRO Ask failed:", e);
+      setError("Network error - please try again");
+    }
+    setAsking(false);
+  };
+
+  const getHealthColor = (health: string) => {
+    switch (health) {
+      case "excellent": return "text-green-400 bg-green-500/20";
+      case "good": return "text-emerald-400 bg-emerald-500/20";
+      case "fair": return "text-yellow-400 bg-yellow-500/20";
+      case "poor": return "text-orange-400 bg-orange-500/20";
+      case "critical": return "text-red-400 bg-red-500/20";
+      default: return "text-gray-400 bg-gray-500/20";
+    }
+  };
+
+  return (
+    <div className="mt-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-[#0B1B3F]">
+            <UserCog className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold font-heading text-pink-400">CHRO Agent</h2>
+            <p className="text-xs text-gray-500 font-mono">HR Intelligence</p>
+          </div>
+        </div>
+        <button
+          onClick={runAnalysis}
+          disabled={loading}
+          className="px-4 py-2 bg-pink-500 text-white font-bold rounded-lg hover:bg-pink-500/80 transition-colors disabled:opacity-50"
+          data-testid="button-run-chro-analysis"
+        >
+          {loading ? "Analyzing..." : "Run Analysis"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6">
+        <div className="p-6 rounded-xl border border-pink-500/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-pink-400 mb-4">Ask the CHRO</h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask about hiring, team capacity, or productivity..."
+              className="flex-1 px-4 py-2 rounded-lg bg-black/50 border border-pink-500/20 text-white text-sm focus:outline-none focus:border-pink-500/50"
+              onKeyDown={(e) => e.key === "Enter" && askQuestion()}
+              data-testid="input-chro-question"
+            />
+            <button
+              onClick={askQuestion}
+              disabled={asking}
+              className="px-4 py-2 bg-pink-500 text-white font-bold rounded-lg hover:bg-pink-500/80 transition-colors disabled:opacity-50"
+              data-testid="button-ask-chro"
+            >
+              {asking ? "..." : "Ask"}
+            </button>
+          </div>
+          {answer && (
+            <div className="p-4 rounded-lg bg-black/30 border border-pink-500/10" data-testid="text-chro-answer">
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{answer}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 rounded-xl border border-pink-500/30 bg-[#0B1B3F]/30">
+          <h3 className="text-sm font-bold text-pink-400 mb-4">Workforce Status</h3>
+          {analysis ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 uppercase tracking-wider">Team Health</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getHealthColor(analysis.teamHealth)}`}>
+                  {analysis.teamHealth}
+                </span>
+              </div>
+
+              {analysis.workforceMetrics && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Capacity</p>
+                    <p className="text-xs text-pink-400 font-mono">{analysis.workforceMetrics.capacity}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Productivity</p>
+                    <p className="text-xs text-pink-400 font-mono">{analysis.workforceMetrics.productivity}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-black/30 text-center">
+                    <p className="text-[10px] text-gray-500 uppercase">Morale</p>
+                    <p className="text-xs text-pink-400 font-mono">{analysis.workforceMetrics.morale}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div data-testid="text-chro-summary">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Summary</p>
+                <p className="text-sm text-gray-300">{analysis.summary}</p>
+              </div>
+              
+              {analysis.hiringPriorities?.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Hiring Priorities</p>
+                  <div className="space-y-1">
+                    {analysis.hiringPriorities.slice(0, 3).map((hire: any, i: number) => (
+                      <div key={i} className={`p-2 rounded-lg text-xs flex items-center gap-2 ${
+                        hire.priority === "critical" ? "bg-red-500/20 text-red-400" :
+                        hire.priority === "high" ? "bg-orange-500/20 text-orange-400" :
+                        "bg-yellow-500/20 text-yellow-400"
+                      }`}>
+                        <Briefcase className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium">{hire.role}</span>
+                        <span className="text-gray-500">- {hire.division}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Users className="w-10 h-10 text-pink-500/30 mx-auto mb-2" />
               <p className="text-sm text-gray-500">No analysis yet</p>
               <p className="text-xs text-gray-600">Click "Run Analysis" to get started</p>
             </div>

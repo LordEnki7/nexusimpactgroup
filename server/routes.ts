@@ -16,6 +16,7 @@ import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
 import { runCOOAnalysis, askCOO, getCOOQuickStatus } from "./agents/cooAgent";
 import { runCTOAnalysis, askCTO, getCTOQuickStatus } from "./agents/ctoAgent";
 import { runCMOAnalysis, askCMO, getCMOQuickStatus } from "./agents/cmoAgent";
+import { runCHROAnalysis, askCHRO, getCHROQuickStatus } from "./agents/chroAgent";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -558,6 +559,60 @@ export async function registerRoutes(
   app.get("/api/cmo/status", isAdmin, async (req, res) => {
     try {
       const status = await getCMOQuickStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get status" });
+    }
+  });
+
+  // ============================================
+  // CHRO AGENT ENDPOINTS
+  // ============================================
+
+  // Run full CHRO HR analysis
+  app.post("/api/chro/analyze", isAdmin, async (req, res) => {
+    try {
+      const divisions = await storage.getDivisions();
+
+      const analysis = await runCHROAnalysis({
+        divisions: divisions.map(d => ({
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          tier: d.tier || 3,
+          category: d.category
+        })),
+        totalDivisions: divisions.length,
+        activeDivisions: divisions.filter(d => d.status === "live").length
+      });
+
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("CHRO analysis error:", error);
+      res.status(500).json({ success: false, error: "Failed to run CHRO analysis" });
+    }
+  });
+
+  // Ask CHRO a question
+  app.post("/api/chro/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) {
+        return res.status(400).json({ success: false, error: "Question required" });
+      }
+      
+      const answer = await askCHRO(question);
+      res.json({ success: true, answer });
+    } catch (error) {
+      console.error("CHRO ask error:", error);
+      res.status(500).json({ success: false, error: "Failed to get answer" });
+    }
+  });
+
+  // Get CHRO quick status
+  app.get("/api/chro/status", isAdmin, async (req, res) => {
+    try {
+      const status = await getCHROQuickStatus();
       res.json({ success: true, status });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get status" });
