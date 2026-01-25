@@ -46,6 +46,7 @@ export interface IStorage {
   
   createSubscriber(subscriber: InsertSubscriber): Promise<Subscriber>;
   getSubscriberByEmail(email: string): Promise<Subscriber | undefined>;
+  getSubscribers(): Promise<Subscriber[]>;
   
   createQuoteRequest(quote: InsertQuoteRequest): Promise<QuoteRequest>;
   getQuoteRequests(): Promise<QuoteRequest[]>;
@@ -107,6 +108,10 @@ export class DatabaseStorage implements IStorage {
   async getSubscriberByEmail(email: string): Promise<Subscriber | undefined> {
     const [subscriber] = await db.select().from(subscribers).where(eq(subscribers.email, email));
     return subscriber;
+  }
+
+  async getSubscribers(): Promise<Subscriber[]> {
+    return await db.select().from(subscribers).orderBy(desc(subscribers.createdAt));
   }
 
   async createQuoteRequest(quote: InsertQuoteRequest): Promise<QuoteRequest> {
