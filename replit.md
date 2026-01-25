@@ -88,6 +88,44 @@ PostgreSQL with Drizzle ORM:
 - **Quote Form** - App development inquiry form
 - **Blog Section** - Featured + regular posts
 
+## NIG Core AI Agent System
+
+### Executive Agents (C-Suite)
+| Agent | Color | Focus |
+|-------|-------|-------|
+| CFO Agent | Gold | Financial intelligence - revenue, costs, projections |
+| COO Agent | Cyan | Operations - division health, bottlenecks, efficiency |
+| CTO Agent | Green | Technical - uptime, security, performance, architecture |
+| CMO Agent | Purple | Marketing - brand health, campaigns, growth opportunities |
+| CHRO Agent | Pink | HR - team capacity, hiring needs, productivity |
+
+### Division Agents (Under Executives)
+**CMO Division Agents:**
+- Social Media Agent - engagement, followers, viral opportunities
+- SEO Agent - search rankings, organic traffic, backlinks
+- Content Agent - blog posts, videos, email campaigns
+
+**CTO Division Agents:**
+- DevOps Agent - CI/CD, deployments, infrastructure
+- Security Agent - vulnerabilities, compliance, threats
+- Architecture Agent - tech debt, scalability, code quality
+
+### Automated Scheduler
+- Executive Health Check (every 30 min)
+- Alert Scan (every 15 min)
+- Daily Summary (daily at 9 AM)
+
+### API Endpoints - Agents
+- `/api/cfo/*` - CFO analysis & Q&A
+- `/api/coo/*` - COO analysis & Q&A
+- `/api/cto/*` - CTO analysis & Q&A
+- `/api/cmo/*` - CMO analysis & Q&A
+- `/api/chro/*` - CHRO analysis & Q&A
+- `/api/division/cmo/*` - CMO division agents
+- `/api/division/cto/*` - CTO division agents
+- `/api/scheduler/*` - Scheduler control
+- `/api/alerts` - Alert management
+
 ## Recent Changes (Jan 2026)
 - Added AI-generated hero video with modal playback
 - Created Case Studies section with 5 success stories
@@ -98,6 +136,9 @@ PostgreSQL with Drizzle ORM:
 - Built comprehensive FAQ with category tabs
 - Added Quote Form for app development requests
 - Created Blog section with featured posts
+- Built 5 Executive AI Agents (CFO, COO, CTO, CMO, CHRO)
+- Added 6 Division Agents under CMO and CTO
+- Implemented automated scheduler with alerts
 - Updated database schema with new tables
 - Added all 13 division logos to EcosystemGrid
 - Enhanced SEO meta tags
