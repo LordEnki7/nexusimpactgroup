@@ -17,6 +17,8 @@ import { runCOOAnalysis, askCOO, getCOOQuickStatus } from "./agents/cooAgent";
 import { runCTOAnalysis, askCTO, getCTOQuickStatus } from "./agents/ctoAgent";
 import { runCMOAnalysis, askCMO, getCMOQuickStatus } from "./agents/cmoAgent";
 import { runCHROAnalysis, askCHRO, getCHROQuickStatus } from "./agents/chroAgent";
+import { runAllCMODivisionAgents, runSocialMediaAnalysis, runSEOAnalysis, runContentAnalysis } from "./agents/division/cmoDivisionAgents";
+import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArchitectureAnalysis } from "./agents/division/ctoDivisionAgents";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -616,6 +618,86 @@ export async function registerRoutes(
       res.json({ success: true, status });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get status" });
+    }
+  });
+
+  // ============================================
+  // DIVISION AGENT ENDPOINTS
+  // ============================================
+
+  // CMO Division Agents
+  app.post("/api/division/cmo/all", isAdmin, async (req, res) => {
+    try {
+      const analyses = await runAllCMODivisionAgents();
+      res.json({ success: true, analyses });
+    } catch (error) {
+      console.error("CMO Division Agents error:", error);
+      res.status(500).json({ success: false, error: "Failed to run analyses" });
+    }
+  });
+
+  app.post("/api/division/cmo/social-media", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runSocialMediaAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  app.post("/api/division/cmo/seo", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runSEOAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  app.post("/api/division/cmo/content", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runContentAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  // CTO Division Agents
+  app.post("/api/division/cto/all", isAdmin, async (req, res) => {
+    try {
+      const analyses = await runAllCTODivisionAgents();
+      res.json({ success: true, analyses });
+    } catch (error) {
+      console.error("CTO Division Agents error:", error);
+      res.status(500).json({ success: false, error: "Failed to run analyses" });
+    }
+  });
+
+  app.post("/api/division/cto/devops", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runDevOpsAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  app.post("/api/division/cto/security", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runSecurityAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  app.post("/api/division/cto/architecture", isAdmin, async (req, res) => {
+    try {
+      const analysis = await runArchitectureAnalysis();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to run analysis" });
     }
   });
 
