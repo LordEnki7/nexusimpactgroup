@@ -43,7 +43,7 @@ shared/
 └── schema.ts      # Database schema
 ```
 
-## 14 Divisions (13 + NIG Core)
+## 15 Divisions (14 + NIG Core)
 1. **C.A.R.E.N.** - Citizen Assistance for Roadside Encounters and Navigation
 2. **Real Pulse Verifier** - True Identity Validation
 3. **My Life Assistant** - AI Personal Concierge
@@ -58,6 +58,7 @@ shared/
 12. **The Shock Factor** - Podcast Entertainment
 13. **ClearSpace** - iPhone Image Cleaner
 14. **CAD and Me** - Coronary Artery Disease Audiobook by S. Williams
+15. **Global Trade Facilitators** - GSM-102 USDA Export Credit Guarantee (globaltradefacilitators.us.com)
 
 ## Database Tables
 PostgreSQL with Drizzle ORM:
