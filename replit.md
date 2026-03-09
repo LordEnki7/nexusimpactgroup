@@ -1,7 +1,7 @@
 # Nexus Impact Group (NIG) Marketing Website
 
 ## Overview
-A stunning, futuristic marketing website for Nexus Impact Group - a fully integrated ecosystem with 13 innovative divisions plus the NIG Core hub. The site showcases all divisions covering safety, identity, automation, finance, connection, entertainment, health, and global trade.
+A stunning, futuristic marketing website for Nexus Impact Group - a fully integrated ecosystem with 15 divisions plus the NIG Core hub. The site showcases all divisions covering safety, identity, automation, finance, connection, entertainment, health, and global trade. Features a Master Ecosystem Command Center with AI-powered executive agents, specialist agents, daily executive briefs, approval workflows, and full audit trail execution logging.
 
 ## Design System
 - **Nexus Blue**: #0B1B3F (primary dark background)
@@ -29,34 +29,47 @@ client/
 │   │   ├── Footer.tsx           # Newsletter signup
 │   │   └── Navigation.tsx       # Site header
 │   ├── pages/
-│   │   └── Home.tsx             # Main landing page
+│   │   ├── Home.tsx             # Main landing page
+│   │   └── CommandCenter.tsx    # Master Command Center Dashboard
 │   └── App.tsx                  # Router setup
 ├── index.html                   # SEO meta tags
 └── index.css                    # Global styles, animations
 
 server/
-├── routes.ts      # API endpoints
-├── storage.ts     # Database interface (Drizzle)
-└── index.ts       # Express server
+├── agents/
+│   ├── orchestratorAgent.ts     # Master Orchestrator - daily briefs, proposals, cross-business intelligence
+│   ├── specialistAgents.ts      # Opportunity Hunter, Revenue Generator, Growth Engine, System Optimizer
+│   ├── cfoAgent.ts              # CFO Agent - financial analysis
+│   ├── cooAgent.ts              # COO Agent - operations analysis
+│   ├── ctoAgent.ts              # CTO Agent - technical analysis
+│   ├── cmoAgent.ts              # CMO Agent - marketing analysis
+│   ├── chroAgent.ts             # CHRO Agent - HR analysis
+│   ├── scheduler.ts             # Automated scheduler with health checks, alerts, daily briefs
+│   └── division/
+│       ├── cmoDivisionAgents.ts # Social Media, SEO, Content agents
+│       └── ctoDivisionAgents.ts # DevOps, Security, Architecture agents
+├── routes.ts                    # API endpoints
+├── storage.ts                   # Database interface (Drizzle)
+└── index.ts                     # Express server
 
 shared/
-└── schema.ts      # Database schema
+└── schema.ts                    # Database schema
 ```
 
 ## 15 Divisions (14 + NIG Core)
-1. **C.A.R.E.N.** - Citizen Assistance for Roadside Encounters and Navigation
+1. **C.A.R.E.N.** - Citizen Assistance for Roadside Encounters and Navigation (carenalert.com)
 2. **Real Pulse Verifier** - True Identity Validation
-3. **My Life Assistant** - AI Personal Concierge
-4. **The Remedy Club** - Credit & Debt Freedom (Mr. Delete Credit Counseling)
+3. **My Life Assistant** - AI Personal Concierge (mylifeassistant.vip)
+4. **The Remedy Club** - Credit & Debt Freedom (theremedyclub.vip)
 5. **NIG Core Ecosystem** - Central Intelligence Hub
-6. **Rent-A-Buddy** - Platonic Connection
-7. **Eternal Chase** - Immersive Entertainment
-8. **Project DNA Music** - Shakim & Project DNA - Sonic Engineering
-9. **Zapp Marketing and Manufacturing** - 40,000+ products, global trade
-10. **Studio Artist Live** - Creative Performance Platform
+6. **Rent-A-Buddy** - Platonic Connection (rent-a-buddy.info)
+7. **Eternal Chase** - Immersive Entertainment (eternalchase.stream)
+8. **Project DNA Music** - Shakim & Project DNA - Sonic Engineering (projectdnamusic.info)
+9. **Zapp Marketing and Manufacturing** - 40,000+ products, global trade (zapp-ecommerce.online)
+10. **Studio Artist Live** - Creative Performance Platform (studioartistlive.com)
 11. **Right Time Notary** - Mobile Notary Services
 12. **The Shock Factor** - Podcast Entertainment
-13. **ClearSpace** - iPhone Image Cleaner
+13. **ClearSpace** - iPhone Image Cleaner (clearspace.photos)
 14. **CAD and Me** - Coronary Artery Disease Audiobook by S. Williams
 15. **Global Trade Facilitators** - GSM-102 USDA Export Credit Guarantee (globaltradefacilitators.us.com)
 
@@ -68,28 +81,32 @@ PostgreSQL with Drizzle ORM:
 - `quote_requests` - App development quote requests
 - `callback_requests` - Phone callback requests
 - `blog_posts` - Blog/news articles
+- `divisions` - NIG ecosystem divisions
+- `division_metrics` - Division KPIs
+- `incidents` - Incident tracking
+- `financial_snapshots` - Financial data
+- `agent_logs` - Agent activity audit trail
+- `orchestrator_proposals` - Task proposals requiring approval
+- `execution_reports` - Full execution audit trail with quality scores
+- `agent_memory` - Shared AI memory for learning
+- `daily_briefs` - Stored daily executive briefs
 
-## API Endpoints
-- `POST /api/inquiries` - Submit contact form
-- `POST /api/subscribe` - Newsletter signup
-- `POST /api/quotes` - Submit quote request
-- `POST /api/callbacks` - Request callback
-- `GET /api/inquiries` - List all inquiries (admin)
-- `GET /api/blog` - Get published blog posts
-- `GET /api/blog/:slug` - Get single blog post
+## Master Ecosystem Command Center
 
-## Features
-- **AI-Generated Hero Video** - Cinematic intro video with modal playback
-- **Case Studies** - Interactive success stories with testimonials
-- **Timeline** - Visual roadmap of NIG's journey
-- **Comparison Charts** - Feature comparison vs competitors
-- **Social Proof** - Stats bar and testimonial carousel
-- **Booking System** - Callback request form (Calendly placeholder)
-- **FAQ Section** - Categorized questions by division
-- **Quote Form** - App development inquiry form
-- **Blog Section** - Featured + regular posts
+### Architecture (6 Layers)
+1. **AI Brain** - GPT-4o via OpenAI (Replit AI Integrations)
+2. **Master Orchestrator** - Universal Business Orchestrator above all executives
+3. **Executive Agents** - CFO, COO, CTO, CMO, CHRO
+4. **Division Agents** - Social Media, SEO, Content, DevOps, Security, Architecture
+5. **Specialist Agents** - Opportunity Hunter, Revenue Generator, Growth Engine, System Optimizer
+6. **Monitoring & Control** - Scheduler, alerts, execution reports, memory system
 
-## NIG Core AI Agent System
+### Master Orchestrator
+- Generates Daily Executive Briefs with 9 structured sections
+- Creates task proposals with priority scoring (1-100)
+- Manages approval workflows (pending → approved → executed)
+- Cross-business intelligence between divisions
+- Full execution logging with quality reviews
 
 ### Executive Agents (C-Suite)
 | Agent | Color | Focus |
@@ -100,51 +117,71 @@ PostgreSQL with Drizzle ORM:
 | CMO Agent | Purple | Marketing - brand health, campaigns, growth opportunities |
 | CHRO Agent | Pink | HR - team capacity, hiring needs, productivity |
 
-### Division Agents (Under Executives)
-**CMO Division Agents:**
-- Social Media Agent - engagement, followers, viral opportunities
-- SEO Agent - search rankings, organic traffic, backlinks
-- Content Agent - blog posts, videos, email campaigns
+### Specialist Agents
+| Agent | Focus |
+|-------|-------|
+| Opportunity Hunter | Growth, partnerships, investment, market expansion |
+| Revenue Generator | Monetization, cross-selling, new revenue streams |
+| Growth Engine | Marketing campaigns, viral opportunities, funnel optimization |
+| System Optimizer | Efficiency, automation, workflow improvements |
 
-**CTO Division Agents:**
-- DevOps Agent - CI/CD, deployments, infrastructure
-- Security Agent - vulnerabilities, compliance, threats
-- Architecture Agent - tech debt, scalability, code quality
+### Division Agents
+**CMO Division:** Social Media, SEO, Content
+**CTO Division:** DevOps, Security, Architecture
 
 ### Automated Scheduler
 - Executive Health Check (every 30 min)
 - Alert Scan (every 15 min)
 - Daily Summary (daily at 9 AM)
+- Daily Executive Brief (daily at 9 AM)
+- Cross-Business Synergy Scan (weekly)
 
-### API Endpoints - Agents
-- `/api/cfo/*` - CFO analysis & Q&A
-- `/api/coo/*` - COO analysis & Q&A
-- `/api/cto/*` - CTO analysis & Q&A
-- `/api/cmo/*` - CMO analysis & Q&A
-- `/api/chro/*` - CHRO analysis & Q&A
-- `/api/division/cmo/*` - CMO division agents
-- `/api/division/cto/*` - CTO division agents
-- `/api/scheduler/*` - Scheduler control
-- `/api/alerts` - Alert management
+### API Endpoints
+**Orchestrator:**
+- `POST /api/orchestrator/daily-brief` - Generate daily executive brief
+- `GET /api/orchestrator/daily-brief/latest` - Get latest brief
+- `POST /api/orchestrator/ask` - Ask orchestrator a question
+- `POST /api/orchestrator/cross-business` - Run cross-business analysis
+- `GET /api/orchestrator/overview` - Ecosystem overview
 
-## Recent Changes (Jan 2026)
-- Added AI-generated hero video with modal playback
-- Created Case Studies section with 5 success stories
-- Built Timeline component showing NIG journey 2020-2026
-- Added Comparison Charts for 3 divisions
-- Implemented Social Proof with stats and testimonial carousel
-- Created Booking Section with callback form
-- Built comprehensive FAQ with category tabs
-- Added Quote Form for app development requests
-- Created Blog section with featured posts
-- Built 5 Executive AI Agents (CFO, COO, CTO, CMO, CHRO)
-- Added 6 Division Agents under CMO and CTO
-- Implemented automated scheduler with alerts
-- Updated database schema with new tables
-- Added all 13 division logos to EcosystemGrid
-- Enhanced SEO meta tags
+**Proposals & Approvals:**
+- `POST /api/proposals` - Create proposal
+- `GET /api/proposals` - Get proposals (filterable by status)
+- `PUT /api/proposals/:id/approve` - Approve
+- `PUT /api/proposals/:id/reject` - Reject
+- `POST /api/proposals/:id/execute` - Execute approved proposal
+
+**Specialist Agents:**
+- `POST /api/specialist/opportunity-hunter`
+- `POST /api/specialist/revenue-generator`
+- `POST /api/specialist/growth-engine`
+- `POST /api/specialist/system-optimizer`
+
+**Reports & Memory:**
+- `GET /api/execution-reports` - Execution audit trail
+- `GET /api/memory` - Agent memory entries
+- `POST /api/memory` - Store memory entry
+
+**Executive Agents:**
+- `/api/cfo/*`, `/api/coo/*`, `/api/cto/*`, `/api/cmo/*`, `/api/chro/*`
+
+**Division Agents:**
+- `/api/division/cmo/*`, `/api/division/cto/*`
+
+**System:**
+- `/api/scheduler/*`, `/api/alerts`
+
+## Command Center UI Panels
+1. **Orchestrator** - Master orchestrator with daily brief generation, cross-business analysis, Q&A
+2. **Dashboard** - Division status, agent activity, system stats
+3. **Approvals** - Pending proposals with approve/reject/execute actions
+4. **Specialists** - Opportunity Hunter, Revenue Generator, Growth Engine, System Optimizer
+5. **Exec Agents** - CFO, COO, CTO, CMO, CHRO panels with analysis & Q&A
+6. **Reports** - Execution reports with quality scores and audit details
+7. **Memory** - AI memory entries with category filtering
 
 ## User Preferences
 - Futuristic, tech-forward design aesthetic
 - NIG logo with intertwining rings for Core Ecosystem
 - "Zapp Marketing" renamed to "Zapp Marketing and Manufacturing"
+- Master agent system based on uploaded planning documents

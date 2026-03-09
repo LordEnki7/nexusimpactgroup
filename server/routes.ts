@@ -19,6 +19,8 @@ import { runCMOAnalysis, askCMO, getCMOQuickStatus } from "./agents/cmoAgent";
 import { runCHROAnalysis, askCHRO, getCHROQuickStatus } from "./agents/chroAgent";
 import { runAllCMODivisionAgents, runSocialMediaAnalysis, runSEOAnalysis, runContentAnalysis } from "./agents/division/cmoDivisionAgents";
 import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArchitectureAnalysis } from "./agents/division/ctoDivisionAgents";
+import { generateDailyBrief, createProposal, executeApprovedTask, askOrchestrator, analyzeCrossBusiness, getEcosystemOverview } from "./agents/orchestratorAgent";
+import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOptimizer } from "./agents/specialistAgents";
 import { scheduler } from "./agents/scheduler";
 
 // Admin user ID - only this user can access the dashboard
@@ -699,6 +701,242 @@ export async function registerRoutes(
       res.json({ success: true, analysis });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to run analysis" });
+    }
+  });
+
+  // ============================================
+  // MASTER ORCHESTRATOR ENDPOINTS
+  // ============================================
+
+  app.post("/api/orchestrator/daily-brief", isAdmin, async (req, res) => {
+    try {
+      const brief = await generateDailyBrief();
+      res.json({ success: true, brief });
+    } catch (error) {
+      console.error("Daily brief error:", error);
+      res.status(500).json({ success: false, error: "Failed to generate daily brief" });
+    }
+  });
+
+  app.get("/api/orchestrator/daily-brief/latest", isAdmin, async (req, res) => {
+    try {
+      const brief = await storage.getLatestBrief();
+      res.json({ success: true, brief: brief || null });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch latest brief" });
+    }
+  });
+
+  app.get("/api/orchestrator/daily-briefs", isAdmin, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const briefs = await storage.getDailyBriefs(limit);
+      res.json({ success: true, briefs });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch briefs" });
+    }
+  });
+
+  app.post("/api/orchestrator/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) {
+        return res.status(400).json({ success: false, error: "Question required" });
+      }
+      const answer = await askOrchestrator(question);
+      res.json({ success: true, answer });
+    } catch (error) {
+      console.error("Orchestrator ask error:", error);
+      res.status(500).json({ success: false, error: "Failed to get answer" });
+    }
+  });
+
+  app.post("/api/orchestrator/cross-business", isAdmin, async (req, res) => {
+    try {
+      const analysis = await analyzeCrossBusiness();
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("Cross-business analysis error:", error);
+      res.status(500).json({ success: false, error: "Failed to run cross-business analysis" });
+    }
+  });
+
+  app.get("/api/orchestrator/overview", isAdmin, async (req, res) => {
+    try {
+      const overview = await getEcosystemOverview();
+      res.json({ success: true, overview });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get ecosystem overview" });
+    }
+  });
+
+  // ============================================
+  // PROPOSAL & APPROVAL ENDPOINTS
+  // ============================================
+
+  app.post("/api/proposals", isAdmin, async (req, res) => {
+    try {
+      const { title, objective, reason, platformsInvolved, agentsRequired, resourcesNeeded, expectedResult, estimatedTime, category } = req.body;
+      if (!title || !objective || !reason) {
+        return res.status(400).json({ success: false, error: "Title, objective, and reason are required" });
+      }
+      const proposal = await createProposal({
+        title, objective, reason, platformsInvolved, agentsRequired, resourcesNeeded, expectedResult, estimatedTime, category
+      });
+      res.json({ success: true, proposal });
+    } catch (error) {
+      console.error("Create proposal error:", error);
+      res.status(500).json({ success: false, error: "Failed to create proposal" });
+    }
+  });
+
+  app.get("/api/proposals", isAdmin, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const proposals = await storage.getProposals(status);
+      res.json({ success: true, proposals });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch proposals" });
+    }
+  });
+
+  app.get("/api/proposals/:id", isAdmin, async (req, res) => {
+    try {
+      const proposal = await storage.getProposal(parseInt(req.params.id));
+      if (!proposal) {
+        return res.status(404).json({ success: false, error: "Proposal not found" });
+      }
+      res.json({ success: true, proposal });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch proposal" });
+    }
+  });
+
+  app.put("/api/proposals/:id/approve", isAdmin, async (req, res) => {
+    try {
+      const proposal = await storage.updateProposalStatus(parseInt(req.params.id), "approved");
+      if (!proposal) {
+        return res.status(404).json({ success: false, error: "Proposal not found" });
+      }
+      await storage.createAgentLog({
+        agentType: "orchestrator",
+        agentName: "Master Orchestrator",
+        action: `Proposal Approved: ${proposal.title}`,
+        details: `Priority Score: ${proposal.priorityScore}`,
+        status: "completed"
+      });
+      res.json({ success: true, proposal });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to approve proposal" });
+    }
+  });
+
+  app.put("/api/proposals/:id/reject", isAdmin, async (req, res) => {
+    try {
+      const { reason } = req.body;
+      const proposal = await storage.updateProposalStatus(parseInt(req.params.id), "rejected", reason);
+      if (!proposal) {
+        return res.status(404).json({ success: false, error: "Proposal not found" });
+      }
+      res.json({ success: true, proposal });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to reject proposal" });
+    }
+  });
+
+  app.post("/api/proposals/:id/execute", isAdmin, async (req, res) => {
+    try {
+      const result = await executeApprovedTask(parseInt(req.params.id));
+      res.json({ success: true, result });
+    } catch (error) {
+      console.error("Execute proposal error:", error);
+      res.status(500).json({ success: false, error: "Failed to execute proposal" });
+    }
+  });
+
+  // ============================================
+  // EXECUTION REPORTS & MEMORY ENDPOINTS
+  // ============================================
+
+  app.get("/api/execution-reports", isAdmin, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const reports = await storage.getExecutionReports(limit);
+      res.json({ success: true, reports });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch execution reports" });
+    }
+  });
+
+  app.get("/api/memory", isAdmin, async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const entries = await storage.getMemoryEntries(category, limit);
+      res.json({ success: true, entries });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to fetch memory entries" });
+    }
+  });
+
+  app.post("/api/memory", isAdmin, async (req, res) => {
+    try {
+      const { category, title, content, agentSource, qualityScore, tags } = req.body;
+      if (!category || !title || !content || !agentSource) {
+        return res.status(400).json({ success: false, error: "Category, title, content, and agentSource are required" });
+      }
+      const entry = await storage.createMemoryEntry({ category, title, content, agentSource, qualityScore, tags });
+      res.json({ success: true, entry });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to create memory entry" });
+    }
+  });
+
+  // ============================================
+  // SPECIALIST AGENT ENDPOINTS
+  // ============================================
+
+  app.post("/api/specialist/opportunity-hunter", isAdmin, async (req, res) => {
+    try {
+      const { focusArea } = req.body || {};
+      const analysis = await runOpportunityHunter(focusArea);
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("Opportunity Hunter error:", error);
+      res.status(500).json({ success: false, error: "Failed to run opportunity scan" });
+    }
+  });
+
+  app.post("/api/specialist/revenue-generator", isAdmin, async (req, res) => {
+    try {
+      const { focusArea } = req.body || {};
+      const analysis = await runRevenueGenerator(focusArea);
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("Revenue Generator error:", error);
+      res.status(500).json({ success: false, error: "Failed to run revenue analysis" });
+    }
+  });
+
+  app.post("/api/specialist/growth-engine", isAdmin, async (req, res) => {
+    try {
+      const { focusArea } = req.body || {};
+      const analysis = await runGrowthEngine(focusArea);
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("Growth Engine error:", error);
+      res.status(500).json({ success: false, error: "Failed to run growth analysis" });
+    }
+  });
+
+  app.post("/api/specialist/system-optimizer", isAdmin, async (req, res) => {
+    try {
+      const { focusArea } = req.body || {};
+      const analysis = await runSystemOptimizer(focusArea);
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error("System Optimizer error:", error);
+      res.status(500).json({ success: false, error: "Failed to run optimization scan" });
     }
   });
 

@@ -168,6 +168,74 @@ export const agentLogs = pgTable("agent_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const orchestratorProposals = pgTable("orchestrator_proposals", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  objective: text("objective").notNull(),
+  reason: text("reason").notNull(),
+  platformsInvolved: text("platforms_involved"),
+  agentsRequired: text("agents_required"),
+  resourcesNeeded: text("resources_needed"),
+  expectedResult: text("expected_result"),
+  estimatedTime: text("estimated_time"),
+  priorityScore: integer("priority_score").default(50),
+  urgency: text("urgency").default("medium"),
+  category: text("category").default("general"),
+  status: text("status").notNull().default("pending"),
+  approvedAt: timestamp("approved_at"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const executionReports = pgTable("execution_reports", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposal_id"),
+  taskTitle: text("task_title").notNull(),
+  agentName: text("agent_name").notNull(),
+  objective: text("objective").notNull(),
+  status: text("status").notNull().default("in_progress"),
+  startTime: timestamp("start_time").defaultNow().notNull(),
+  endTime: timestamp("end_time"),
+  durationMinutes: integer("duration_minutes"),
+  actionLog: text("action_log"),
+  toolsUsed: text("tools_used"),
+  outputsCreated: text("outputs_created"),
+  qualityScore: integer("quality_score"),
+  qualityReview: text("quality_review"),
+  resultsReview: text("results_review"),
+  lessonsLearned: text("lessons_learned"),
+  nextSteps: text("next_steps"),
+  businessImpact: text("business_impact"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const agentMemory = pgTable("agent_memory", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  agentSource: text("agent_source").notNull(),
+  qualityScore: integer("quality_score"),
+  tags: text("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const dailyBriefs = pgTable("daily_briefs", {
+  id: serial("id").primaryKey(),
+  briefDate: text("brief_date").notNull(),
+  executiveSummary: text("executive_summary").notNull(),
+  priorityActions: text("priority_actions"),
+  opportunities: text("opportunities"),
+  bottlenecks: text("bottlenecks"),
+  quickWins: text("quick_wins"),
+  approvalQueue: text("approval_queue"),
+  agentDeployments: text("agent_deployments"),
+  synergies: text("synergies"),
+  successTargets: text("success_targets"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertDivisionSchema = createInsertSchema(divisions).omit({
   id: true,
   createdAt: true,
@@ -194,6 +262,28 @@ export const insertAgentLogSchema = createInsertSchema(agentLogs).omit({
   createdAt: true,
 });
 
+export const insertProposalSchema = createInsertSchema(orchestratorProposals).omit({
+  id: true,
+  createdAt: true,
+  approvedAt: true,
+  rejectedAt: true,
+});
+
+export const insertExecutionReportSchema = createInsertSchema(executionReports).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAgentMemorySchema = createInsertSchema(agentMemory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDailyBriefSchema = createInsertSchema(dailyBriefs).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Division = typeof divisions.$inferSelect;
 export type InsertDivision = z.infer<typeof insertDivisionSchema>;
 export type DivisionMetric = typeof divisionMetrics.$inferSelect;
@@ -204,6 +294,14 @@ export type FinancialSnapshot = typeof financialSnapshots.$inferSelect;
 export type InsertFinancialSnapshot = z.infer<typeof insertFinancialSnapshotSchema>;
 export type AgentLog = typeof agentLogs.$inferSelect;
 export type InsertAgentLog = z.infer<typeof insertAgentLogSchema>;
+export type OrchestratorProposal = typeof orchestratorProposals.$inferSelect;
+export type InsertProposal = z.infer<typeof insertProposalSchema>;
+export type ExecutionReport = typeof executionReports.$inferSelect;
+export type InsertExecutionReport = z.infer<typeof insertExecutionReportSchema>;
+export type AgentMemoryEntry = typeof agentMemory.$inferSelect;
+export type InsertAgentMemory = z.infer<typeof insertAgentMemorySchema>;
+export type DailyBrief = typeof dailyBriefs.$inferSelect;
+export type InsertDailyBrief = z.infer<typeof insertDailyBriefSchema>;
 
 // Auth schema (mandatory for Replit Auth)
 export * from "./models/auth";

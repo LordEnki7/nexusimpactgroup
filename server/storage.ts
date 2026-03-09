@@ -21,6 +21,14 @@ import {
   type InsertFinancialSnapshot,
   type AgentLog,
   type InsertAgentLog,
+  type OrchestratorProposal,
+  type InsertProposal,
+  type ExecutionReport,
+  type InsertExecutionReport,
+  type AgentMemoryEntry,
+  type InsertAgentMemory,
+  type DailyBrief,
+  type InsertDailyBrief,
   users,
   inquiries,
   subscribers,
@@ -31,10 +39,14 @@ import {
   divisionMetrics,
   incidents,
   financialSnapshots,
-  agentLogs
+  agentLogs,
+  orchestratorProposals,
+  executionReports,
+  agentMemory,
+  dailyBriefs
 } from "@shared/schema";
 import { db } from "../db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -73,6 +85,22 @@ export interface IStorage {
   
   getAgentLogs(limit?: number): Promise<AgentLog[]>;
   createAgentLog(log: InsertAgentLog): Promise<AgentLog>;
+
+  createProposal(proposal: InsertProposal): Promise<OrchestratorProposal>;
+  getProposals(status?: string): Promise<OrchestratorProposal[]>;
+  getProposal(id: number): Promise<OrchestratorProposal | undefined>;
+  updateProposalStatus(id: number, status: string, reason?: string): Promise<OrchestratorProposal | undefined>;
+
+  createExecutionReport(report: InsertExecutionReport): Promise<ExecutionReport>;
+  getExecutionReports(limit?: number): Promise<ExecutionReport[]>;
+  updateExecutionReport(id: number, updates: Partial<ExecutionReport>): Promise<ExecutionReport | undefined>;
+
+  createMemoryEntry(entry: InsertAgentMemory): Promise<AgentMemoryEntry>;
+  getMemoryEntries(category?: string, limit?: number): Promise<AgentMemoryEntry[]>;
+
+  createDailyBrief(brief: InsertDailyBrief): Promise<DailyBrief>;
+  getLatestBrief(): Promise<DailyBrief | undefined>;
+  getDailyBriefs(limit?: number): Promise<DailyBrief[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -111,7 +139,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSubscribers(): Promise<Subscriber[]> {
-    return await db.select().from(subscribers).orderBy(desc(subscribers.createdAt));
+    return await db.select().from(subscribers).orderBy(desc(subscribers.subscribedAt));
   }
 
   async createQuoteRequest(quote: InsertQuoteRequest): Promise<QuoteRequest> {
@@ -203,6 +231,74 @@ export class DatabaseStorage implements IStorage {
   async createAgentLog(log: InsertAgentLog): Promise<AgentLog> {
     const [newLog] = await db.insert(agentLogs).values(log).returning();
     return newLog;
+  }
+
+  async createProposal(proposal: InsertProposal): Promise<OrchestratorProposal> {
+    const [newProposal] = await db.insert(orchestratorProposals).values(proposal).returning();
+    return newProposal;
+  }
+
+  async getProposals(status?: string): Promise<OrchestratorProposal[]> {
+    if (status) {
+      return await db.select().from(orchestratorProposals).where(eq(orchestratorProposals.status, status)).orderBy(desc(orchestratorProposals.createdAt));
+    }
+    return await db.select().from(orchestratorProposals).orderBy(desc(orchestratorProposals.createdAt));
+  }
+
+  async getProposal(id: number): Promise<OrchestratorProposal | undefined> {
+    const [proposal] = await db.select().from(orchestratorProposals).where(eq(orchestratorProposals.id, id));
+    return proposal;
+  }
+
+  async updateProposalStatus(id: number, status: string, reason?: string): Promise<OrchestratorProposal | undefined> {
+    const updates: any = { status };
+    if (status === "approved") updates.approvedAt = new Date();
+    if (status === "rejected") {
+      updates.rejectedAt = new Date();
+      if (reason) updates.rejectionReason = reason;
+    }
+    const [updated] = await db.update(orchestratorProposals).set(updates).where(eq(orchestratorProposals.id, id)).returning();
+    return updated;
+  }
+
+  async createExecutionReport(report: InsertExecutionReport): Promise<ExecutionReport> {
+    const [newReport] = await db.insert(executionReports).values(report).returning();
+    return newReport;
+  }
+
+  async getExecutionReports(limit: number = 50): Promise<ExecutionReport[]> {
+    return await db.select().from(executionReports).orderBy(desc(executionReports.createdAt)).limit(limit);
+  }
+
+  async updateExecutionReport(id: number, updates: Partial<ExecutionReport>): Promise<ExecutionReport | undefined> {
+    const [updated] = await db.update(executionReports).set(updates).where(eq(executionReports.id, id)).returning();
+    return updated;
+  }
+
+  async createMemoryEntry(entry: InsertAgentMemory): Promise<AgentMemoryEntry> {
+    const [newEntry] = await db.insert(agentMemory).values(entry).returning();
+    return newEntry;
+  }
+
+  async getMemoryEntries(category?: string, limit: number = 50): Promise<AgentMemoryEntry[]> {
+    if (category) {
+      return await db.select().from(agentMemory).where(eq(agentMemory.category, category)).orderBy(desc(agentMemory.createdAt)).limit(limit);
+    }
+    return await db.select().from(agentMemory).orderBy(desc(agentMemory.createdAt)).limit(limit);
+  }
+
+  async createDailyBrief(brief: InsertDailyBrief): Promise<DailyBrief> {
+    const [newBrief] = await db.insert(dailyBriefs).values(brief).returning();
+    return newBrief;
+  }
+
+  async getLatestBrief(): Promise<DailyBrief | undefined> {
+    const [brief] = await db.select().from(dailyBriefs).orderBy(desc(dailyBriefs.createdAt)).limit(1);
+    return brief;
+  }
+
+  async getDailyBriefs(limit: number = 10): Promise<DailyBrief[]> {
+    return await db.select().from(dailyBriefs).orderBy(desc(dailyBriefs.createdAt)).limit(limit);
   }
 }
 

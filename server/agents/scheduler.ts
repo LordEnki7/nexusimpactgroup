@@ -4,6 +4,7 @@ import { runCOOAnalysis, getCOOQuickStatus } from "./cooAgent";
 import { runCTOAnalysis, getCTOQuickStatus } from "./ctoAgent";
 import { runCMOAnalysis, getCMOQuickStatus } from "./cmoAgent";
 import { runCHROAnalysis, getCHROQuickStatus } from "./chroAgent";
+import { generateDailyBrief, analyzeCrossBusiness } from "./orchestratorAgent";
 
 interface ScheduledTask {
   id: string;
@@ -63,6 +64,26 @@ class AgentScheduler {
       nextRun: this.getNextMorning(),
       enabled: true,
       handler: this.runDailySummary.bind(this)
+    });
+
+    this.registerTask({
+      id: "daily_executive_brief",
+      name: "Daily Executive Brief",
+      interval: 24 * 60 * 60 * 1000,
+      lastRun: null,
+      nextRun: this.getNextMorning(),
+      enabled: true,
+      handler: this.runDailyExecutiveBrief.bind(this)
+    });
+
+    this.registerTask({
+      id: "cross_business_scan",
+      name: "Cross-Business Synergy Scan",
+      interval: 7 * 24 * 60 * 60 * 1000,
+      lastRun: null,
+      nextRun: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      enabled: true,
+      handler: this.runCrossBusinessScan.bind(this)
     });
   }
 
@@ -201,6 +222,38 @@ class AgentScheduler {
       details: JSON.stringify(summary),
       status: "completed"
     });
+  }
+
+  async runDailyExecutiveBrief() {
+    try {
+      const brief = await generateDailyBrief();
+      await storage.createAgentLog({
+        agentType: "orchestrator",
+        agentName: "Master Orchestrator",
+        action: "Daily Executive Brief Generated",
+        details: brief.executiveSummary?.substring(0, 200) || "Brief generated",
+        status: "completed"
+      });
+    } catch (error) {
+      console.error("[Scheduler] Daily Executive Brief failed:", error);
+      this.addAlert("warning", "Orchestrator", "Daily Executive Brief generation failed");
+    }
+  }
+
+  async runCrossBusinessScan() {
+    try {
+      const analysis = await analyzeCrossBusiness();
+      await storage.createAgentLog({
+        agentType: "orchestrator",
+        agentName: "Master Orchestrator",
+        action: "Cross-Business Synergy Scan Complete",
+        details: analysis.summary?.substring(0, 200) || "Scan completed",
+        status: "completed"
+      });
+    } catch (error) {
+      console.error("[Scheduler] Cross-Business Scan failed:", error);
+      this.addAlert("warning", "Orchestrator", "Cross-business synergy scan failed");
+    }
   }
 
   addAlert(type: Alert["type"], source: string, message: string) {

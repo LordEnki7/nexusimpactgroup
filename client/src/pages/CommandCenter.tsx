@@ -30,7 +30,27 @@ import {
   Bell,
   Search,
   FileCode,
-  Share2
+  Share2,
+  Crown,
+  FileText,
+  Target,
+  Lightbulb,
+  Flame,
+  ThumbsUp,
+  ThumbsDown,
+  Brain,
+  Cpu,
+  Rocket,
+  Wrench,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  Send,
+  Star,
+  Database,
+  Filter,
+  Eye,
+  CircleDot
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,14 +98,26 @@ export default function CommandCenter() {
   const bypassAuth = true;
   const effectiveAuth = bypassAuth || isAuthenticated;
   
+  const [activePanel, setActivePanel] = useState<string>("orchestrator");
+
   const { data, isLoading, refetch, error } = useQuery<{ success: boolean; data: DashboardData }>({
     queryKey: ["/api/dashboard"],
     refetchInterval: 30000,
-    enabled: true, // Always fetch for now
+    enabled: true,
     retry: false,
   });
 
   const dashboard = data?.data;
+
+  const panelTabs = [
+    { id: "orchestrator", label: "Orchestrator", icon: Crown, color: "from-[#14C1D7] to-[#DAA520]" },
+    { id: "dashboard", label: "Dashboard", icon: Activity, color: "from-[#14C1D7] to-[#14C1D7]" },
+    { id: "approvals", label: "Approvals", icon: ThumbsUp, color: "from-green-500 to-emerald-500" },
+    { id: "specialists", label: "Specialists", icon: Cpu, color: "from-teal-500 to-emerald-500" },
+    { id: "agents", label: "Exec Agents", icon: Bot, color: "from-[#DAA520] to-[#14C1D7]" },
+    { id: "reports", label: "Reports", icon: FileText, color: "from-blue-500 to-indigo-500" },
+    { id: "memory", label: "Memory", icon: Database, color: "from-purple-500 to-pink-500" },
+  ];
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
@@ -160,12 +192,41 @@ export default function CommandCenter() {
         </header>
 
         <main className="container mx-auto px-6 py-8">
+          <div className="flex flex-wrap gap-2 mb-8 p-2 rounded-xl border border-[#14C1D7]/20 bg-[#0B1B3F]/30 backdrop-blur-sm">
+            {panelTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActivePanel(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition-all ${
+                    activePanel === tab.id
+                      ? `bg-gradient-to-r ${tab.color} text-black shadow-lg`
+                      : "text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+                  data-testid={`tab-${tab.id}`}
+                >
+                  <TabIcon className="w-4 h-4" />
+                  <span className="hidden md:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#14C1D7]"></div>
             </div>
           ) : (
             <>
+              {activePanel === "orchestrator" && <OrchestratorPanel />}
+              {activePanel === "approvals" && <ApprovalsPanel />}
+              {activePanel === "specialists" && <SpecialistsPanel />}
+              {activePanel === "reports" && <ReportsPanel />}
+              {activePanel === "memory" && <MemoryPanel />}
+
+              {activePanel === "dashboard" && (
+              <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
@@ -353,6 +414,11 @@ export default function CommandCenter() {
                 </div>
               </div>
 
+              </>
+              )}
+
+              {activePanel === "agents" && (
+              <>
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 <CFOAgentPanel />
                 <COOAgentPanel />
@@ -365,6 +431,8 @@ export default function CommandCenter() {
                 <DivisionAgentsPanel />
                 <SchedulerPanel />
               </div>
+              </>
+              )}
             </>
           )}
         </main>
@@ -1567,5 +1635,972 @@ function SchedulerPanel() {
         )}
       </div>
     </div>
+  );
+}
+
+function safeParse(val: any) {
+  if (!val) return null;
+  if (typeof val === "object") return val;
+  try { return JSON.parse(val); } catch { return val; }
+}
+
+function OrchestratorPanel() {
+  const [brief, setBrief] = useState<any>(null);
+  const [overview, setOverview] = useState<any>(null);
+  const [crossBusiness, setCrossBusiness] = useState<any>(null);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState({ brief: false, overview: false, cross: false, ask: false });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchLatestBrief();
+    fetchOverview();
+  }, []);
+
+  const fetchLatestBrief = async () => {
+    try {
+      const res = await fetch("/api/orchestrator/daily-brief/latest");
+      const data = await res.json();
+      if (data.success && data.brief) setBrief(data.brief);
+    } catch (e) { /* silent */ }
+  };
+
+  const fetchOverview = async () => {
+    setLoading(prev => ({ ...prev, overview: true }));
+    try {
+      const res = await fetch("/api/orchestrator/overview");
+      const data = await res.json();
+      if (data.success) setOverview(data.overview);
+    } catch (e) {
+      setError("Failed to load overview");
+    }
+    setLoading(prev => ({ ...prev, overview: false }));
+  };
+
+  const generateBrief = async () => {
+    setLoading(prev => ({ ...prev, brief: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/orchestrator/daily-brief", { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.brief) {
+        setBrief(data.brief);
+      } else {
+        setError(data.error || "Failed to generate brief");
+      }
+    } catch (e) {
+      setError("Network error generating brief");
+    }
+    setLoading(prev => ({ ...prev, brief: false }));
+  };
+
+  const runCrossBusiness = async () => {
+    setLoading(prev => ({ ...prev, cross: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/orchestrator/cross-business", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setCrossBusiness(data.analysis);
+      } else {
+        setError(data.error || "Failed to run cross-business analysis");
+      }
+    } catch (e) {
+      setError("Network error");
+    }
+    setLoading(prev => ({ ...prev, cross: false }));
+  };
+
+  const askOrchestrator = async () => {
+    if (!question.trim()) return;
+    setLoading(prev => ({ ...prev, ask: true }));
+    setError("");
+    try {
+      const res = await fetch("/api/orchestrator/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (data.success && data.answer) {
+        setAnswer(data.answer);
+      } else {
+        setError(data.error || "Failed to get answer");
+      }
+    } catch (e) {
+      setError("Network error");
+    }
+    setLoading(prev => ({ ...prev, ask: false }));
+  };
+
+  const getPriorityColor = (score: number) => {
+    if (score >= 9) return "bg-red-500 text-white";
+    if (score >= 7) return "bg-orange-500 text-white";
+    if (score >= 5) return "bg-yellow-500 text-black";
+    return "bg-blue-500 text-white";
+  };
+
+  return (
+    <div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#14C1D7] to-[#DAA520] flex items-center justify-center">
+            <Crown className="w-7 h-7 text-black" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold font-heading bg-gradient-to-r from-[#14C1D7] to-[#DAA520] bg-clip-text text-transparent">Master Orchestrator</h2>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Central Intelligence Hub</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm" data-testid="text-orchestrator-error">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <button
+            onClick={generateBrief}
+            disabled={loading.brief}
+            className="p-4 rounded-xl border border-[#DAA520]/30 bg-[#0B1B3F]/30 hover:bg-[#DAA520]/10 transition-all text-left group"
+            data-testid="button-generate-brief"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <FileText className="w-5 h-5 text-[#DAA520]" />
+              <span className="text-sm font-bold text-[#DAA520]">Generate Daily Brief</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {loading.brief ? "Generating comprehensive brief..." : "Full ecosystem analysis & priorities"}
+            </p>
+          </button>
+
+          <button
+            onClick={fetchOverview}
+            disabled={loading.overview}
+            className="p-4 rounded-xl border border-[#14C1D7]/30 bg-[#0B1B3F]/30 hover:bg-[#14C1D7]/10 transition-all text-left group"
+            data-testid="button-ecosystem-overview"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Eye className="w-5 h-5 text-[#14C1D7]" />
+              <span className="text-sm font-bold text-[#14C1D7]">Ecosystem Overview</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {loading.overview ? "Loading overview..." : "Real-time ecosystem status"}
+            </p>
+          </button>
+
+          <button
+            onClick={runCrossBusiness}
+            disabled={loading.cross}
+            className="p-4 rounded-xl border border-emerald-500/30 bg-[#0B1B3F]/30 hover:bg-emerald-500/10 transition-all text-left group"
+            data-testid="button-cross-business"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Share2 className="w-5 h-5 text-emerald-400" />
+              <span className="text-sm font-bold text-emerald-400">Cross-Business Analysis</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {loading.cross ? "Analyzing synergies..." : "Find cross-division opportunities"}
+            </p>
+          </button>
+        </div>
+
+        <div className="p-6 rounded-xl border border-[#14C1D7]/30 bg-[#0B1B3F]/30 mb-8">
+          <h3 className="text-sm font-bold text-[#DAA520] mb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Ask the Orchestrator
+          </h3>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask about strategy, operations, priorities, or any business question..."
+              className="flex-1 px-4 py-2 rounded-lg bg-black/50 border border-[#14C1D7]/20 text-white text-sm focus:outline-none focus:border-[#14C1D7]/50"
+              onKeyDown={(e) => e.key === "Enter" && askOrchestrator()}
+              data-testid="input-orchestrator-question"
+            />
+            <button
+              onClick={askOrchestrator}
+              disabled={loading.ask}
+              className="px-4 py-2 bg-gradient-to-r from-[#14C1D7] to-[#DAA520] text-black font-bold rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 flex items-center gap-2"
+              data-testid="button-ask-orchestrator"
+            >
+              <Send className="w-4 h-4" />
+              {loading.ask ? "..." : "Ask"}
+            </button>
+          </div>
+          {answer && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-lg bg-black/30 border border-[#14C1D7]/10"
+              data-testid="text-orchestrator-answer"
+            >
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{answer}</p>
+            </motion.div>
+          )}
+        </div>
+
+        {overview && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-6 rounded-xl border border-[#14C1D7]/30 bg-[#0B1B3F]/30 mb-8"
+            data-testid="section-ecosystem-overview"
+          >
+            <h3 className="text-sm font-bold text-[#14C1D7] mb-4">Ecosystem Overview</h3>
+            <p className="text-sm text-gray-300 whitespace-pre-wrap">
+              {typeof overview === "string" ? overview : JSON.stringify(overview, null, 2)}
+            </p>
+          </motion.div>
+        )}
+
+        {crossBusiness && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-6 rounded-xl border border-emerald-500/30 bg-[#0B1B3F]/30 mb-8"
+            data-testid="section-cross-business"
+          >
+            <h3 className="text-sm font-bold text-emerald-400 mb-4">Cross-Business Analysis</h3>
+            <p className="text-sm text-gray-300 whitespace-pre-wrap">
+              {typeof crossBusiness === "string" ? crossBusiness : JSON.stringify(crossBusiness, null, 2)}
+            </p>
+          </motion.div>
+        )}
+
+        {brief && <DailyBriefView brief={brief} />}
+      </motion.div>
+    </div>
+  );
+}
+
+function DailyBriefView({ brief }: { brief: any }) {
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const getPriorityColor = (score: number) => {
+    if (score >= 9) return "bg-red-500 text-white";
+    if (score >= 7) return "bg-orange-500 text-white";
+    if (score >= 5) return "bg-yellow-500 text-black";
+    return "bg-blue-500 text-white";
+  };
+
+  const sections = [
+    { key: "executiveSummary", title: "Executive Summary", icon: Crown, color: "text-[#DAA520]", borderColor: "border-[#DAA520]/30" },
+    { key: "priorityActions", title: "Priority Actions", icon: Target, color: "text-red-400", borderColor: "border-red-500/30" },
+    { key: "highValueOpportunities", title: "High-Value Opportunities", icon: Lightbulb, color: "text-emerald-400", borderColor: "border-emerald-500/30" },
+    { key: "problemsBottlenecks", title: "Problems & Bottlenecks", icon: AlertTriangle, color: "text-orange-400", borderColor: "border-orange-500/30" },
+    { key: "quickWins", title: "Quick Wins", icon: Zap, color: "text-yellow-400", borderColor: "border-yellow-500/30" },
+    { key: "approvalQueue", title: "Approval Queue", icon: ThumbsUp, color: "text-green-400", borderColor: "border-green-500/30" },
+    { key: "agentDeployments", title: "Agent Deployments", icon: Bot, color: "text-[#14C1D7]", borderColor: "border-[#14C1D7]/30" },
+    { key: "crossBusinessSynergies", title: "Cross-Business Synergies", icon: Share2, color: "text-purple-400", borderColor: "border-purple-500/30" },
+    { key: "endOfDayTargets", title: "End-of-Day Success Targets", icon: CheckCircle, color: "text-green-400", borderColor: "border-green-500/30" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+      data-testid="section-daily-brief"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <FileText className="w-5 h-5 text-[#DAA520]" />
+        <h3 className="text-lg font-bold font-heading text-[#DAA520]">Daily Executive Brief</h3>
+        {brief.createdAt && (
+          <span className="text-xs text-gray-500 font-mono">
+            {new Date(brief.createdAt).toLocaleDateString()} {new Date(brief.createdAt).toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
+      {sections.map(({ key, title, icon: Icon, color, borderColor }) => {
+        const rawValue = brief[key];
+        const parsed = safeParse(rawValue);
+        const isExpanded = expandedSections[key] !== false;
+
+        return (
+          <div
+            key={key}
+            className={`rounded-xl border ${borderColor} bg-[#0B1B3F]/30 overflow-hidden`}
+            data-testid={`brief-section-${key}`}
+          >
+            <button
+              onClick={() => toggleSection(key)}
+              className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+              data-testid={`button-toggle-${key}`}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={`w-5 h-5 ${color}`} />
+                <span className={`text-sm font-bold ${color}`}>{title}</span>
+              </div>
+              {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+            </button>
+
+            {isExpanded && parsed && (
+              <div className="px-4 pb-4">
+                {key === "priorityActions" && Array.isArray(parsed) ? (
+                  <div className="space-y-2">
+                    {parsed.map((action: any, i: number) => (
+                      <div key={i} className="p-3 rounded-lg bg-black/30 flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-300">{typeof action === "string" ? action : action.action || action.title || JSON.stringify(action)}</p>
+                          {action.reason && <p className="text-xs text-gray-500 mt-1">{action.reason}</p>}
+                        </div>
+                        {action.priority !== undefined && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getPriorityColor(action.priority)}`}>
+                            {action.priority}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : Array.isArray(parsed) ? (
+                  <div className="space-y-2">
+                    {parsed.map((item: any, i: number) => (
+                      <div key={i} className="p-3 rounded-lg bg-black/30">
+                        <p className="text-sm text-gray-300">{typeof item === "string" ? item : item.title || item.action || item.description || JSON.stringify(item)}</p>
+                        {item.details && <p className="text-xs text-gray-500 mt-1">{item.details}</p>}
+                        {item.impact && <p className="text-xs text-emerald-400 mt-1">Impact: {item.impact}</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : typeof parsed === "string" ? (
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{parsed}</p>
+                ) : (
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{JSON.stringify(parsed, null, 2)}</p>
+                )}
+              </div>
+            )}
+
+            {isExpanded && !parsed && (
+              <div className="px-4 pb-4">
+                <p className="text-xs text-gray-500 italic">No data available</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+function ApprovalsPanel() {
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
+  const [error, setError] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    fetchProposals();
+    fetchHistory();
+  }, []);
+
+  const fetchProposals = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/proposals?status=pending");
+      const data = await res.json();
+      if (data.success) setProposals(data.proposals || []);
+    } catch (e) {
+      setError("Failed to load proposals");
+    }
+    setLoading(false);
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const [approvedRes, rejectedRes] = await Promise.all([
+        fetch("/api/proposals?status=approved"),
+        fetch("/api/proposals?status=rejected")
+      ]);
+      const [approvedData, rejectedData] = await Promise.all([approvedRes.json(), rejectedRes.json()]);
+      const combined = [...(approvedData.proposals || []), ...(rejectedData.proposals || [])];
+      combined.sort((a: any, b: any) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+      setHistory(combined);
+    } catch (e) { /* silent */ }
+  };
+
+  const handleAction = async (id: number, action: "approve" | "reject" | "execute") => {
+    setActionLoading(prev => ({ ...prev, [id]: action }));
+    setError("");
+    try {
+      const method = action === "execute" ? "POST" : "PUT";
+      const url = action === "execute" ? `/api/proposals/${id}/execute` : `/api/proposals/${id}/${action}`;
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" } });
+      const data = await res.json();
+      if (data.success) {
+        await fetchProposals();
+        await fetchHistory();
+      } else {
+        setError(data.error || `Failed to ${action} proposal`);
+      }
+    } catch (e) {
+      setError(`Network error during ${action}`);
+    }
+    setActionLoading(prev => ({ ...prev, [id]: "" }));
+  };
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency?.toLowerCase()) {
+      case "critical": return "bg-red-500/20 text-red-400";
+      case "high": return "bg-orange-500/20 text-orange-400";
+      case "medium": return "bg-yellow-500/20 text-yellow-400";
+      case "low": return "bg-blue-500/20 text-blue-400";
+      default: return "bg-gray-500/20 text-gray-400";
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+          <ThumbsUp className="w-7 h-7 text-black" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold font-heading text-green-400">Approval Queue</h2>
+          <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Proposals awaiting review</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm" data-testid="text-approvals-error">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
+        </div>
+      ) : proposals.length === 0 ? (
+        <div className="p-8 rounded-xl border border-green-500/20 bg-[#0B1B3F]/30 text-center mb-8">
+          <CheckCircle className="w-10 h-10 text-green-500/30 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No pending proposals</p>
+          <p className="text-xs text-gray-600 mt-1">All caught up!</p>
+        </div>
+      ) : (
+        <div className="space-y-4 mb-8">
+          {proposals.map((proposal: any) => (
+            <motion.div
+              key={proposal.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="p-5 rounded-xl border border-green-500/30 bg-[#0B1B3F]/30"
+              data-testid={`card-proposal-${proposal.id}`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-white mb-1">{proposal.title}</h4>
+                  <p className="text-xs text-gray-400">{proposal.objective}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {proposal.priorityScore !== undefined && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      proposal.priorityScore >= 9 ? "bg-red-500 text-white" :
+                      proposal.priorityScore >= 7 ? "bg-orange-500 text-white" :
+                      proposal.priorityScore >= 5 ? "bg-yellow-500 text-black" :
+                      "bg-blue-500 text-white"
+                    }`} data-testid={`badge-priority-${proposal.id}`}>
+                      {proposal.priorityScore}
+                    </span>
+                  )}
+                  {proposal.urgency && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${getUrgencyColor(proposal.urgency)}`}>
+                      {proposal.urgency}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {proposal.category && (
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#14C1D7]/10 text-[#14C1D7] border border-[#14C1D7]/20 mb-3">
+                  {proposal.category}
+                </span>
+              )}
+
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  onClick={() => handleAction(proposal.id, "approve")}
+                  disabled={!!actionLoading[proposal.id]}
+                  className="px-3 py-1.5 bg-green-500 text-black text-xs font-bold rounded-lg hover:bg-green-500/80 disabled:opacity-50 flex items-center gap-1"
+                  data-testid={`button-approve-${proposal.id}`}
+                >
+                  <ThumbsUp className="w-3 h-3" />
+                  {actionLoading[proposal.id] === "approve" ? "..." : "Approve"}
+                </button>
+                <button
+                  onClick={() => handleAction(proposal.id, "reject")}
+                  disabled={!!actionLoading[proposal.id]}
+                  className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-500/80 disabled:opacity-50 flex items-center gap-1"
+                  data-testid={`button-reject-${proposal.id}`}
+                >
+                  <ThumbsDown className="w-3 h-3" />
+                  {actionLoading[proposal.id] === "reject" ? "..." : "Reject"}
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-8">
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
+          data-testid="button-toggle-history"
+        >
+          {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          <span>Approved / Rejected History ({history.length})</span>
+        </button>
+
+        {showHistory && history.length > 0 && (
+          <div className="space-y-3">
+            {history.map((item: any) => (
+              <div
+                key={item.id}
+                className={`p-4 rounded-xl border ${
+                  item.status === "approved" ? "border-green-500/20 bg-green-500/5" : "border-red-500/20 bg-red-500/5"
+                }`}
+                data-testid={`card-history-${item.id}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{item.title}</h4>
+                    <p className="text-xs text-gray-400">{item.objective}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
+                      item.status === "approved" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                    }`}>
+                      {item.status}
+                    </span>
+                    {item.status === "approved" && (
+                      <button
+                        onClick={() => handleAction(item.id, "execute")}
+                        disabled={!!actionLoading[item.id]}
+                        className="px-3 py-1 bg-[#14C1D7] text-black text-xs font-bold rounded-lg hover:bg-[#14C1D7]/80 disabled:opacity-50 flex items-center gap-1"
+                        data-testid={`button-execute-${item.id}`}
+                      >
+                        <Play className="w-3 h-3" />
+                        {actionLoading[item.id] === "execute" ? "..." : "Execute"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function SpecialistsPanel() {
+  const [results, setResults] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState("");
+
+  const specialists = [
+    { id: "opportunity-hunter", name: "Opportunity Hunter", icon: Search, color: "teal", description: "Scans ecosystem for new revenue opportunities", endpoint: "/api/specialist/opportunity-hunter" },
+    { id: "revenue-generator", name: "Revenue Generator", icon: DollarSign, color: "emerald", description: "Identifies paths to increase revenue", endpoint: "/api/specialist/revenue-generator" },
+    { id: "growth-engine", name: "Growth Engine", icon: Rocket, color: "teal", description: "Analyzes growth strategies and scaling potential", endpoint: "/api/specialist/growth-engine" },
+    { id: "system-optimizer", name: "System Optimizer", icon: Wrench, color: "emerald", description: "Finds inefficiencies and optimization paths", endpoint: "/api/specialist/system-optimizer" },
+  ];
+
+  const runSpecialist = async (id: string, endpoint: string) => {
+    setLoading(prev => ({ ...prev, [id]: true }));
+    setError("");
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResults(prev => ({ ...prev, [id]: data.analysis }));
+      } else {
+        setError(data.error || `Failed to run ${id}`);
+      }
+    } catch (e) {
+      setError(`Network error running ${id}`);
+    }
+    setLoading(prev => ({ ...prev, [id]: false }));
+  };
+
+  const getColorClasses = (color: string) => {
+    if (color === "teal") return { border: "border-teal-500/30", bg: "hover:bg-teal-500/10", text: "text-teal-400", btn: "bg-teal-500 text-black", icon: "bg-gradient-to-br from-teal-500 to-teal-700" };
+    return { border: "border-emerald-500/30", bg: "hover:bg-emerald-500/10", text: "text-emerald-400", btn: "bg-emerald-500 text-black", icon: "bg-gradient-to-br from-emerald-500 to-emerald-700" };
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+          <Cpu className="w-7 h-7 text-black" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold font-heading text-emerald-400">Specialist Agents</h2>
+          <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Focused intelligence units</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm" data-testid="text-specialists-error">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {specialists.map((spec) => {
+          const Icon = spec.icon;
+          const colors = getColorClasses(spec.color);
+          const result = results[spec.id];
+
+          return (
+            <motion.div
+              key={spec.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`p-5 rounded-xl border ${colors.border} bg-[#0B1B3F]/30`}
+              data-testid={`card-specialist-${spec.id}`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${colors.icon}`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${colors.text}`}>{spec.name}</h3>
+                    <p className="text-xs text-gray-500">{spec.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => runSpecialist(spec.id, spec.endpoint)}
+                disabled={loading[spec.id]}
+                className={`w-full px-4 py-2 ${colors.btn} font-bold rounded-lg hover:opacity-80 transition-colors disabled:opacity-50 text-sm mb-4`}
+                data-testid={`button-run-${spec.id}`}
+              >
+                {loading[spec.id] ? "Running Analysis..." : "Run Analysis"}
+              </button>
+
+              {result && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-lg bg-black/30 border border-white/5 max-h-60 overflow-y-auto"
+                  data-testid={`result-${spec.id}`}
+                >
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                    {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+function ReportsPanel() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/execution-reports");
+      const data = await res.json();
+      if (data.success) setReports(data.reports || []);
+    } catch (e) {
+      setError("Failed to load reports");
+    }
+    setLoading(false);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "completed": return "bg-green-500/20 text-green-400";
+      case "success": return "bg-green-500/20 text-green-400";
+      case "failed": return "bg-red-500/20 text-red-400";
+      case "running": return "bg-blue-500/20 text-blue-400";
+      case "pending": return "bg-yellow-500/20 text-yellow-400";
+      default: return "bg-gray-500/20 text-gray-400";
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+            <FileText className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold font-heading text-blue-400">Execution Reports</h2>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Task execution history</p>
+          </div>
+        </div>
+        <button
+          onClick={fetchReports}
+          className="p-2 border border-blue-500/30 rounded-lg hover:bg-blue-500/10 transition-colors"
+          data-testid="button-refresh-reports"
+        >
+          <RefreshCw className="w-4 h-4 text-blue-400" />
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm" data-testid="text-reports-error">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="p-8 rounded-xl border border-blue-500/20 bg-[#0B1B3F]/30 text-center">
+          <FileText className="w-10 h-10 text-blue-500/30 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No execution reports yet</p>
+          <p className="text-xs text-gray-600 mt-1">Reports appear after tasks are executed</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((report: any) => (
+            <motion.div
+              key={report.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="rounded-xl border border-blue-500/20 bg-[#0B1B3F]/30 overflow-hidden"
+              data-testid={`card-report-${report.id}`}
+            >
+              <button
+                onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}
+                className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                data-testid={`button-expand-report-${report.id}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 text-left">
+                    <h4 className="text-sm font-bold text-white">{report.taskTitle || report.title || "Task"}</h4>
+                    <p className="text-xs text-gray-500 font-mono">{report.agent || report.agentName || "Agent"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {report.qualityScore !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-[#DAA520]" />
+                      <span className="text-xs font-mono text-[#DAA520]">{report.qualityScore}</span>
+                    </div>
+                  )}
+                  {report.duration && (
+                    <span className="text-xs font-mono text-gray-500">{report.duration}</span>
+                  )}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${getStatusColor(report.status)}`}>
+                    {report.status}
+                  </span>
+                  {expandedId === report.id ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+                </div>
+              </button>
+
+              {expandedId === report.id && (
+                <div className="px-4 pb-4 border-t border-blue-500/10">
+                  <div className="pt-3">
+                    {report.result && (
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Result</p>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                          {typeof report.result === "string" ? report.result : JSON.stringify(safeParse(report.result), null, 2)}
+                        </p>
+                      </div>
+                    )}
+                    {report.details && (
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Details</p>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                          {typeof report.details === "string" ? report.details : JSON.stringify(safeParse(report.details), null, 2)}
+                        </p>
+                      </div>
+                    )}
+                    {report.createdAt && (
+                      <p className="text-xs text-gray-600 mt-2 font-mono">
+                        {new Date(report.createdAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function MemoryPanel() {
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchMemory();
+  }, [categoryFilter]);
+
+  const fetchMemory = async () => {
+    setLoading(true);
+    try {
+      const url = categoryFilter ? `/api/memory?category=${encodeURIComponent(categoryFilter)}` : "/api/memory";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setEntries(data.entries || []);
+        if (!categoryFilter) {
+          const catSet = new Set<string>((data.entries || []).map((e: any) => e.category).filter(Boolean));
+          const cats = Array.from(catSet);
+          setCategories(cats);
+        }
+      }
+    } catch (e) {
+      setError("Failed to load memory entries");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <Database className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold font-heading text-purple-400">Memory System</h2>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Institutional knowledge base</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { setCategoryFilter(""); fetchMemory(); }}
+          className="p-2 border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors"
+          data-testid="button-refresh-memory"
+        >
+          <RefreshCw className="w-4 h-4 text-purple-400" />
+        </button>
+      </div>
+
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => setCategoryFilter("")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              !categoryFilter ? "bg-purple-500 text-white" : "border border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+            }`}
+            data-testid="button-filter-all"
+          >
+            All
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                categoryFilter === cat ? "bg-purple-500 text-white" : "border border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+              }`}
+              data-testid={`button-filter-${cat}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm" data-testid="text-memory-error">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="p-8 rounded-xl border border-purple-500/20 bg-[#0B1B3F]/30 text-center">
+          <Database className="w-10 h-10 text-purple-500/30 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No memory entries yet</p>
+          <p className="text-xs text-gray-600 mt-1">Memory builds as agents learn and execute</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {entries.map((entry: any) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="p-4 rounded-xl border border-purple-500/20 bg-[#0B1B3F]/30"
+              data-testid={`card-memory-${entry.id}`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-white">{entry.title}</h4>
+                  <div className="flex items-center gap-3 mt-1">
+                    {entry.category && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        {entry.category}
+                      </span>
+                    )}
+                    {entry.agentSource && (
+                      <span className="text-xs text-gray-500 font-mono">{entry.agentSource}</span>
+                    )}
+                  </div>
+                </div>
+                {entry.qualityScore !== undefined && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 text-[#DAA520]" />
+                    <span className="text-xs font-mono text-[#DAA520]">{entry.qualityScore}</span>
+                  </div>
+                )}
+              </div>
+              {entry.content && (
+                <p className="text-xs text-gray-400 mt-2 line-clamp-3">{entry.content}</p>
+              )}
+              {entry.createdAt && (
+                <p className="text-[10px] text-gray-600 mt-2 font-mono">
+                  {new Date(entry.createdAt).toLocaleString()}
+                </p>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 }
