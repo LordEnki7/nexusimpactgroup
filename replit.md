@@ -94,7 +94,7 @@ PostgreSQL with Drizzle ORM:
 ## Master Ecosystem Command Center
 
 ### Architecture (6 Layers)
-1. **AI Brain** - GPT-4o via OpenAI (Replit AI Integrations)
+1. **AI Brain** - GPT-4o via OpenAI (supports both standard OPENAI_API_KEY and Replit AI Integrations)
 2. **Master Orchestrator** - Universal Business Orchestrator above all executives
 3. **Executive Agents** - CFO, COO, CTO, CMO, CHRO
 4. **Division Agents** - Social Media, SEO, Content, DevOps, Security, Architecture
@@ -179,6 +179,32 @@ PostgreSQL with Drizzle ORM:
 5. **Exec Agents** - CFO, COO, CTO, CMO, CHRO panels with analysis & Q&A
 6. **Reports** - Execution reports with quality scores and audit details
 7. **Memory** - AI memory entries with category filtering
+
+## Self-Hosted Deployment
+The app is prepared for deployment outside Replit:
+
+### Key Files
+- `Dockerfile` - Multi-stage Node 20 Alpine build
+- `docker-compose.yml` - App + PostgreSQL stack
+- `.env.example` - Required environment variables
+- `.dockerignore` - Excludes unnecessary files from Docker builds
+- `server/agents/openaiClient.ts` - Shared OpenAI client with env var fallback
+
+### Environment Variables (Self-Hosted)
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `OPENAI_API_KEY` | Standard OpenAI API key |
+| `SESSION_SECRET` | Express session secret |
+| `APP_URL` | Public URL for meta tags (e.g., https://yourdomain.com) |
+| `PORT` | Server port (default: 5000) |
+
+### How It Works
+- **Auth**: Replit OIDC auth is conditionally loaded only when `REPL_ID` is present. On self-hosted, a simple session middleware is used instead.
+- **OpenAI**: All agent files use a shared client (`openaiClient.ts`) that checks `OPENAI_API_KEY` first, falling back to `AI_INTEGRATIONS_OPENAI_API_KEY`.
+- **Meta Images**: Vite plugin checks `APP_URL` first, then Replit domains.
+- **Build**: `npm run build` produces `dist/index.cjs` (server) and `dist/public/` (client).
+- **Run**: `npm start` or `node dist/index.cjs` in production.
 
 ## User Preferences
 - Futuristic, tech-forward design aesthetic

@@ -1,10 +1,5 @@
-import OpenAI from "openai";
+import { openai } from "./openaiClient";
 import { storage } from "../storage";
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
 
 const DIVISIONS_CONTEXT = `The NIG ecosystem includes 15 divisions:
 - C.A.R.E.N. (Safety - Tier 1) - Automated roadside assistance | carenalert.com

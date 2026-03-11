@@ -11,7 +11,7 @@ import {
   insertAgentLogSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { isAuthenticated } from "./replit_integrations/auth";
+import type { RequestHandler } from "express";
 import { runCFOAnalysis, askCFO, getCFOQuickStatus } from "./agents/cfoAgent";
 import { runCOOAnalysis, askCOO, getCOOQuickStatus } from "./agents/cooAgent";
 import { runCTOAnalysis, askCTO, getCTOQuickStatus } from "./agents/ctoAgent";
@@ -28,7 +28,7 @@ const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
 
 // Middleware to check if user is the admin
 // TEMPORARILY BYPASSED for development/testing
-const isAdmin: typeof isAuthenticated = async (req, res, next) => {
+const isAdmin: RequestHandler = async (req, res, next) => {
   // Bypass auth temporarily for testing
   return next();
   

@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -61,10 +60,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Setup authentication BEFORE registering routes
-  await setupAuth(app);
-  registerAuthRoutes(app);
-  
+  if (process.env.REPL_ID) {
+    const { setupAuth, registerAuthRoutes } = await import("./replit_integrations/auth");
+    await setupAuth(app);
+    registerAuthRoutes(app);
+  } else {
+    const sessionMod = await import("express-session");
+    app.use(sessionMod.default({
+      secret: process.env.SESSION_SECRET || "nig-dev-secret",
+      resave: false,
+      saveUninitialized: false,
+      cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 },
+    }));
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
