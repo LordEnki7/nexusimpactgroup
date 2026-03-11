@@ -4,11 +4,13 @@ dist
 .gitignore
 .env
 .env.local
-attached_assets
 *.md
 .local
 .cache
 .config
 .upm
-generated
 .canvas
+attached_assets/*.pdf
+attached_assets/*.txt
+attached_assets/2020-11-12_16-28-07_1767682672640.mkv
+client/replit_integrations
