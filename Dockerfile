@@ -15,14 +15,16 @@ WORKDIR /app
 
 COPY --from=base /app/dist ./dist
 COPY --from=base /app/package.json /app/package-lock.json ./
+COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/drizzle.config.ts ./
 COPY --from=base /app/shared ./shared
+COPY --from=base /app/start.sh ./start.sh
 
-RUN npm ci --omit=dev
+RUN chmod +x start.sh
 
 ENV NODE_ENV=production
 ENV PORT=5000
 
 EXPOSE 5000
 
-CMD ["node", "dist/index.cjs"]
+CMD ["./start.sh"]
