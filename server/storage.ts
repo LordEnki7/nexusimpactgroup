@@ -73,6 +73,7 @@ export interface IStorage {
   getDivisions(): Promise<Division[]>;
   getDivision(id: number): Promise<Division | undefined>;
   createDivision(division: InsertDivision): Promise<Division>;
+  updateDivisionStatus(id: number, status: string): Promise<Division | undefined>;
   
   getDivisionMetrics(divisionId?: number): Promise<DivisionMetric[]>;
   createDivisionMetric(metric: InsertDivisionMetric): Promise<DivisionMetric>;
@@ -186,6 +187,15 @@ export class DatabaseStorage implements IStorage {
   async createDivision(division: InsertDivision): Promise<Division> {
     const [newDivision] = await db.insert(divisions).values(division).returning();
     return newDivision;
+  }
+
+  async updateDivisionStatus(id: number, status: string): Promise<Division | undefined> {
+    const [updated] = await db
+      .update(divisions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(divisions.id, id))
+      .returning();
+    return updated;
   }
 
   async getDivisionMetrics(divisionId?: number): Promise<DivisionMetric[]> {

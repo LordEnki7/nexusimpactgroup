@@ -22,6 +22,7 @@ import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArc
 import { generateDailyBrief, createProposal, executeApprovedTask, askOrchestrator, analyzeCrossBusiness, getEcosystemOverview } from "./agents/orchestratorAgent";
 import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOptimizer } from "./agents/specialistAgents";
 import { scheduler } from "./agents/scheduler";
+import { collectDivisionData } from "./agents/divisionCollector";
 
 // Admin user ID - only this user can access the dashboard
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
@@ -1006,6 +1007,49 @@ export async function registerRoutes(
       res.json({ success: true, message: "Alert resolved" });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to resolve alert" });
+    }
+  });
+
+  // Manually trigger division data collection
+  app.post("/api/divisions/collect", isAdmin, async (req, res) => {
+    try {
+      const results = await collectDivisionData();
+      const succeeded = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success);
+      res.json({
+        success: true,
+        message: `Collected from ${succeeded}/${results.length} division apps`,
+        results,
+        failedDivisions: failed.map((r) => ({ name: r.divisionName, error: r.error })),
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Collection failed" });
+    }
+  });
+
+  // Get latest collection status per division
+  app.get("/api/divisions/collection-status", isAdmin, async (req, res) => {
+    try {
+      const allDivisions = await storage.getDivisions();
+      const metrics = await storage.getDivisionMetrics();
+      const statusByDivision = allDivisions.map((d) => {
+        const divMetrics = metrics.filter((m) => m.divisionId === d.id);
+        const lastHealth = divMetrics.find((m) => m.metricKey === "health_score");
+        const lastUptime = divMetrics.find((m) => m.metricKey === "uptime");
+        const lastUsers = divMetrics.find((m) => m.metricKey === "active_users");
+        return {
+          id: d.id,
+          name: d.name,
+          status: d.status,
+          lastCollected: lastHealth?.recordedAt || null,
+          healthScore: lastHealth ? Number(lastHealth.value) : null,
+          uptime: lastUptime ? Number(lastUptime.value) : null,
+          activeUsers: lastUsers ? Number(lastUsers.value) : null,
+        };
+      });
+      res.json({ success: true, divisions: statusByDivision });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get collection status" });
     }
   });
 

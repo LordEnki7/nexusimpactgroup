@@ -5,6 +5,7 @@ import { runCTOAnalysis, getCTOQuickStatus } from "./ctoAgent";
 import { runCMOAnalysis, getCMOQuickStatus } from "./cmoAgent";
 import { runCHROAnalysis, getCHROQuickStatus } from "./chroAgent";
 import { generateDailyBrief, analyzeCrossBusiness } from "./orchestratorAgent";
+import { collectDivisionData } from "./divisionCollector";
 
 interface ScheduledTask {
   id: string;
@@ -84,6 +85,16 @@ class AgentScheduler {
       nextRun: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       enabled: true,
       handler: this.runCrossBusinessScan.bind(this)
+    });
+
+    this.registerTask({
+      id: "division_data_collection",
+      name: "Division App Data Collection",
+      interval: 30 * 60 * 1000,
+      lastRun: null,
+      nextRun: new Date(Date.now() + 5 * 60 * 1000),
+      enabled: true,
+      handler: this.runDivisionDataCollection.bind(this)
     });
   }
 
@@ -253,6 +264,23 @@ class AgentScheduler {
     } catch (error) {
       console.error("[Scheduler] Cross-Business Scan failed:", error);
       this.addAlert("warning", "Orchestrator", "Cross-business synergy scan failed");
+    }
+  }
+
+  async runDivisionDataCollection() {
+    try {
+      const results = await collectDivisionData();
+      const failed = results.filter((r) => !r.success);
+      if (failed.length > 0) {
+        this.addAlert(
+          failed.length >= 5 ? "critical" : "warning",
+          "Division Collector",
+          `${failed.length} division app(s) unreachable: ${failed.map((r) => r.divisionName).join(", ")}`
+        );
+      }
+    } catch (error) {
+      console.error("[Scheduler] Division data collection failed:", error);
+      this.addAlert("warning", "Division Collector", "Division data collection failed");
     }
   }
 
