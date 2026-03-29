@@ -19,6 +19,7 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/drizzle.config.ts ./
 COPY --from=base /app/shared ./shared
 COPY --from=base /app/start.sh ./start.sh
+COPY --from=base /app/init-db.js ./init-db.js
 
 RUN chmod +x start.sh
 
