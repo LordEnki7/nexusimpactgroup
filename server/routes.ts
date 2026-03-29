@@ -50,7 +50,12 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
+  // Health check endpoint for load balancers and reverse proxies
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // Submit inquiry about a division
   app.post("/api/inquiries", async (req, res) => {
     try {
