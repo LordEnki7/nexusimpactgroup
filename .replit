@@ -41,3 +41,8 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+COMMAND_CENTER_PASSWORD_HASH = "1d69a0bf7acdad1eacc93fc96895f820cb1098ccc1cb2c77c88f94c45091ce191554d29d6f9ac360d803781c990a6bb25bc824a9a67f6ca1cfcf6eed28f84eed"

@@ -180,13 +180,16 @@ export default function CommandCenter() {
                   <span>Main Site</span>
                 </button>
               </Link>
-              <a 
-                href="/api/logout"
+              <button
+                onClick={async () => {
+                  await fetch("/api/auth/logout", { method: "POST" });
+                  window.location.href = "/login";
+                }}
                 className="flex items-center gap-2 px-3 py-2 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors text-red-400 text-sm"
                 data-testid="button-logout"
               >
                 <LogOut className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </div>
         </header>
