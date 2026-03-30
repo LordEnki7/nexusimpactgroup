@@ -1858,10 +1858,72 @@ function OrchestratorPanel() {
             className="p-6 rounded-xl border border-[#14C1D7]/30 bg-[#0B1B3F]/30 mb-8"
             data-testid="section-ecosystem-overview"
           >
-            <h3 className="text-sm font-bold text-[#14C1D7] mb-4">Ecosystem Overview</h3>
-            <p className="text-sm text-gray-300 whitespace-pre-wrap">
-              {typeof overview === "string" ? overview : JSON.stringify(overview, null, 2)}
-            </p>
+            <h3 className="text-sm font-bold text-[#14C1D7] mb-5">Ecosystem Overview</h3>
+
+            {typeof overview === "string" ? (
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{overview}</p>
+            ) : (
+              <>
+                {/* Top stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  {[
+                    { label: "Total Divisions", value: overview.totalDivisions ?? 0, color: "text-[#14C1D7]" },
+                    { label: "Live", value: overview.liveDivisions ?? 0, color: "text-emerald-400" },
+                    { label: "Active", value: overview.activeDivisions ?? 0, color: "text-yellow-400" },
+                    { label: "Open Incidents", value: overview.openIncidents ?? 0, color: overview.criticalIncidents > 0 ? "text-red-400" : "text-gray-300" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="bg-[#0B1B3F]/60 rounded-lg p-3 border border-white/5 text-center">
+                      <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                      <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Health + agents */}
+                <div className="flex flex-wrap gap-3 mb-5">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${overview.healthScore === "good" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : overview.healthScore === "degraded" ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400" : "border-red-500/40 bg-red-500/10 text-red-400"}`}>
+                    Health: {overview.healthScore ?? "unknown"}
+                  </span>
+                  {overview.pendingProposals > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border border-yellow-500/40 bg-yellow-500/10 text-yellow-400">
+                      {overview.pendingProposals} Pending Proposal{overview.pendingProposals !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  {overview.recentExecutions > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border border-[#14C1D7]/40 bg-[#14C1D7]/10 text-[#14C1D7]">
+                      {overview.recentExecutions} Recent Execution{overview.recentExecutions !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+
+                {overview.agentStatus && (
+                  <p className="text-xs text-gray-400 mb-5">{overview.agentStatus}</p>
+                )}
+
+                {/* Division breakdown */}
+                {Array.isArray(overview.divisionBreakdown) && overview.divisionBreakdown.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Division Status</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {overview.divisionBreakdown.map((div: any) => (
+                        <div key={div.name} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0B1B3F]/50 border border-white/5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${div.status === "live" ? "bg-emerald-400" : div.status === "active" ? "bg-yellow-400" : div.status === "configured" ? "bg-[#14C1D7]/60" : "bg-gray-600"}`} />
+                            <span className="text-xs text-gray-200 truncate">{div.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span className="text-xs text-gray-500">{div.category}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${div.status === "live" ? "bg-emerald-500/20 text-emerald-400" : div.status === "active" ? "bg-yellow-500/20 text-yellow-400" : "bg-white/5 text-gray-500"}`}>
+                              {div.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </motion.div>
         )}
 
@@ -1873,9 +1935,38 @@ function OrchestratorPanel() {
             data-testid="section-cross-business"
           >
             <h3 className="text-sm font-bold text-emerald-400 mb-4">Cross-Business Analysis</h3>
-            <p className="text-sm text-gray-300 whitespace-pre-wrap">
-              {typeof crossBusiness === "string" ? crossBusiness : JSON.stringify(crossBusiness, null, 2)}
-            </p>
+            {typeof crossBusiness === "string" ? (
+              <p className="text-sm text-gray-300 whitespace-pre-wrap">{crossBusiness}</p>
+            ) : (
+              <div className="space-y-3">
+                {crossBusiness.summary && (
+                  <p className="text-sm text-gray-300 leading-relaxed">{crossBusiness.summary}</p>
+                )}
+                {crossBusiness.opportunities && (
+                  <div>
+                    <p className="text-xs text-emerald-400/70 uppercase tracking-wider mb-2">Opportunities</p>
+                    <ul className="space-y-1">
+                      {(Array.isArray(crossBusiness.opportunities) ? crossBusiness.opportunities : [crossBusiness.opportunities]).map((opp: string, i: number) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-300"><span className="text-emerald-400 mt-0.5">›</span>{opp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {crossBusiness.risks && (
+                  <div>
+                    <p className="text-xs text-red-400/70 uppercase tracking-wider mb-2">Risks</p>
+                    <ul className="space-y-1">
+                      {(Array.isArray(crossBusiness.risks) ? crossBusiness.risks : [crossBusiness.risks]).map((risk: string, i: number) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-300"><span className="text-red-400 mt-0.5">›</span>{risk}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!crossBusiness.summary && !crossBusiness.opportunities && (
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{JSON.stringify(crossBusiness, null, 2)}</p>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 
