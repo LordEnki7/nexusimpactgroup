@@ -121,6 +121,25 @@ export default function CommandCenter() {
 
   const dashboard = data?.data;
 
+  const [pingResults, setPingResults] = useState<any[]>([]);
+  const [pingLoading, setPingLoading] = useState(false);
+  const [pingLastChecked, setPingLastChecked] = useState<Date | null>(null);
+
+  const runPing = async () => {
+    setPingLoading(true);
+    try {
+      const res = await fetch("/api/divisions/ping");
+      const json = await res.json();
+      if (json.success) { setPingResults(json.results); setPingLastChecked(new Date()); }
+    } catch {}
+    setPingLoading(false);
+  };
+
+  // Auto-ping when dashboard tab opens, then every 5 min
+  useEffect(() => {
+    if (activePanel === "dashboard" && pingResults.length === 0) runPing();
+  }, [activePanel]);
+
   const panelTabs = [
     { id: "orchestrator", label: "Orchestrator", icon: Crown, color: "from-[#14C1D7] to-[#DAA520]" },
     { id: "dashboard", label: "Dashboard", icon: Activity, color: "from-[#14C1D7] to-[#14C1D7]" },
@@ -303,67 +322,103 @@ export default function CommandCenter() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                  <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-lg font-bold font-heading text-[#DAA520]">Division Status</h2>
-                    <span className="text-xs text-gray-500 font-mono">Real-time monitoring</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {dashboard?.divisions.map((division, index) => {
-                      const Icon = getCategoryIcon(division.category);
-                      return (
-                        <motion.div
-                          key={division.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="group p-4 rounded-xl border border-[#14C1D7]/20 bg-[#0B1B3F]/20 hover:border-[#14C1D7]/50 transition-all cursor-pointer"
-                          data-testid={`card-division-${division.id}`}
-                          onClick={() => division.externalUrl && window.open(division.externalUrl, "_blank")}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-[#14C1D7]/10 border border-[#14C1D7]/20">
-                                <Icon className="w-5 h-5 text-[#14C1D7]" />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-white text-sm">{division.name}</h3>
-                                <p className="text-xs text-gray-500">{division.category}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${getStatusColor(division.status)} animate-pulse`} />
-                              {division.externalUrl && (
-                                <ExternalLink className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-400">{division.description}</p>
-                          <div className="mt-3 flex items-center justify-between">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
-                              Tier {division.tier || 3}
-                            </span>
-                            <span className={`text-[10px] font-mono uppercase tracking-wider ${
-                              division.status === "live" ? "text-green-400" : 
-                              division.status === "active" ? "text-cyan-400" : "text-yellow-400"
-                            }`}>
-                              {division.status.replace("_", " ")}
-                            </span>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                  {/* Live Uptime Monitor */}
+                  <div className="mb-5 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold font-heading text-[#DAA520]">Live Division Uptime</h2>
+                      {pingLastChecked && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Last checked: {pingLastChecked.toLocaleTimeString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {pingResults.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs font-mono">
+                          <span className="text-green-400">{pingResults.filter(r => r.status === "live").length} UP</span>
+                          <span className="text-gray-600">|</span>
+                          <span className="text-red-400">{pingResults.filter(r => r.status === "offline").length} DOWN</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={runPing}
+                        disabled={pingLoading}
+                        data-testid="button-ping-divisions"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[#14C1D7]/10 border border-[#14C1D7]/30 rounded-lg text-[#14C1D7] text-xs font-bold hover:bg-[#14C1D7]/20 disabled:opacity-50 transition-all"
+                      >
+                        {pingLoading ? (
+                          <><div className="w-3 h-3 border border-[#14C1D7] border-t-transparent rounded-full animate-spin" />Checking...</>
+                        ) : (
+                          <><Activity className="w-3 h-3" />Check Now</>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
-                  {(!dashboard?.divisions || dashboard.divisions.length === 0) && (
+                  {/* Ping Results Grid */}
+                  {pingLoading && pingResults.length === 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Array.from({ length: 11 }).map((_, i) => (
+                        <div key={i} className="h-16 rounded-xl bg-[#0B1B3F]/30 border border-white/5 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : pingResults.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {pingResults.map((r, i) => (
+                        <motion.div
+                          key={r.name}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.03 }}
+                          className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer group ${
+                            r.status === "live"
+                              ? "border-green-500/20 bg-green-500/5 hover:border-green-500/40"
+                              : r.status === "degraded"
+                              ? "border-yellow-500/20 bg-yellow-500/5 hover:border-yellow-500/40"
+                              : "border-red-500/20 bg-red-500/5 hover:border-red-500/40"
+                          }`}
+                          onClick={() => window.open(`https://${r.domain}`, "_blank")}
+                          data-testid={`ping-card-${i}`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              r.status === "live" ? "bg-green-400 animate-pulse" :
+                              r.status === "degraded" ? "bg-yellow-400 animate-pulse" : "bg-red-500"
+                            }`} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-white truncate">{r.name}</p>
+                              <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                                {r.domain}
+                                <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 text-right ml-2">
+                            <p className={`text-xs font-bold uppercase ${
+                              r.status === "live" ? "text-green-400" :
+                              r.status === "degraded" ? "text-yellow-400" : "text-red-400"
+                            }`}>{r.status}</p>
+                            <p className="text-[10px] text-gray-500 font-mono">
+                              {r.responseMs > 0 ? `${r.responseMs}ms` : "—"}
+                              {r.httpStatus ? ` · ${r.httpStatus}` : ""}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
                     <div className="p-8 rounded-xl border border-[#14C1D7]/20 bg-[#0B1B3F]/20 text-center">
-                      <p className="text-gray-500 mb-4">No divisions configured yet.</p>
-                      <button 
-                        onClick={async () => {
-                          await fetch("/api/seed-divisions", { method: "POST" });
-                          refetch();
-                        }}
-                        className="px-4 py-2 bg-[#14C1D7] text-black font-bold rounded-lg hover:bg-[#14C1D7]/80 transition-colors"
+                      <Activity className="w-8 h-8 text-[#14C1D7]/40 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm mb-4">Click "Check Now" to run a live ping of all division websites.</p>
+                    </div>
+                  )}
+
+                  {(!dashboard?.divisions || dashboard.divisions.length === 0) && (
+                    <div className="mt-4 p-4 rounded-xl border border-[#14C1D7]/20 bg-[#0B1B3F]/20 text-center">
+                      <p className="text-gray-500 mb-3 text-sm">No divisions in database yet.</p>
+                      <button
+                        onClick={async () => { await fetch("/api/seed-divisions", { method: "POST" }); refetch(); }}
+                        className="px-4 py-2 bg-[#14C1D7] text-black font-bold rounded-lg hover:bg-[#14C1D7]/80 transition-colors text-sm"
                         data-testid="button-seed-divisions"
                       >
                         Initialize Divisions

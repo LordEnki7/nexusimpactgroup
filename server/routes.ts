@@ -22,7 +22,7 @@ import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArc
 import { generateDailyBrief, createProposal, executeApprovedTask, askOrchestrator, analyzeCrossBusiness, getEcosystemOverview } from "./agents/orchestratorAgent";
 import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOptimizer } from "./agents/specialistAgents";
 import { scheduler } from "./agents/scheduler";
-import { collectDivisionData } from "./agents/divisionCollector";
+import { collectDivisionData, pingAllDivisions } from "./agents/divisionCollector";
 import { registerCommandCenterAuth, requireCommandCenterAuth } from "./commandCenterAuth";
 import { generateOutreachDraft, generateCrossDivisionRecommendations, summarizeContact, getCrmPipelineSummary } from "./agents/crmAgent";
 import { insertCrmContactSchema, insertCrmDealSchema, insertCrmActivitySchema } from "@shared/schema";
@@ -1035,6 +1035,30 @@ export async function registerRoutes(
       res.json({ success: true, divisions: statusByDivision });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get collection status" });
+    }
+  });
+
+  // Live ping check — runs in parallel, no NIG API required
+  app.get("/api/divisions/ping", isAdmin, async (req, res) => {
+    try {
+      const results = await pingAllDivisions();
+      // Also update division statuses in DB based on ping results
+      const allDivisions = await storage.getDivisions();
+      for (const result of results) {
+        const division = allDivisions.find((d) =>
+          d.name.toLowerCase().includes(result.name.toLowerCase().split(" ")[0])
+        );
+        if (division && result.status === "live" && division.status === "coming_soon") {
+          await storage.updateDivisionStatus(division.id, "live");
+        } else if (division && result.status === "offline" && division.status === "live") {
+          await storage.updateDivisionStatus(division.id, "degraded");
+        }
+      }
+      const live = results.filter((r) => r.status === "live").length;
+      const offline = results.filter((r) => r.status === "offline").length;
+      res.json({ success: true, results, summary: { total: results.length, live, offline, degraded: results.length - live - offline } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 

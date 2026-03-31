@@ -3,6 +3,82 @@ import { storage } from "../storage";
 const NIG_API_KEY = process.env.NIG_API_KEY || "";
 const COLLECTION_TIMEOUT_MS = 10000;
 
+export interface PingResult {
+  name: string;
+  domain: string;
+  status: "live" | "degraded" | "offline";
+  httpStatus: number | null;
+  responseMs: number;
+  checkedAt: string;
+  method: "nig-api" | "ping";
+}
+
+async function pingDivisionSite(domain: string): Promise<{ httpStatus: number; responseMs: number }> {
+  const start = Date.now();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), COLLECTION_TIMEOUT_MS);
+  try {
+    const res = await fetch(`https://${domain}`, {
+      method: "HEAD",
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timeoutId);
+    return { httpStatus: res.status, responseMs: Date.now() - start };
+  } catch {
+    clearTimeout(timeoutId);
+    // Try GET as fallback (some servers reject HEAD)
+    try {
+      const controller2 = new AbortController();
+      const t2 = setTimeout(() => controller2.abort(), COLLECTION_TIMEOUT_MS);
+      const res2 = await fetch(`https://${domain}`, { method: "GET", signal: controller2.signal });
+      clearTimeout(t2);
+      return { httpStatus: res2.status, responseMs: Date.now() - start };
+    } catch {
+      return { httpStatus: 0, responseMs: Date.now() - start };
+    }
+  }
+}
+
+export async function pingAllDivisions(): Promise<PingResult[]> {
+  const results = await Promise.all(
+    DIVISION_ENDPOINTS.map(async (endpoint): Promise<PingResult> => {
+      const checkedAt = new Date().toISOString();
+
+      // First try the NIG status API
+      try {
+        const start = Date.now();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`https://${endpoint.domain}/api/nig-status`, {
+          headers: { "Authorization": `Bearer ${NIG_API_KEY}`, "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const responseMs = Date.now() - start;
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            name: endpoint.name, domain: endpoint.domain,
+            status: data.status === "live" ? "live" : data.status === "maintenance" ? "degraded" : "offline",
+            httpStatus: res.status, responseMs, checkedAt, method: "nig-api",
+          };
+        }
+        // Fall through to ping
+      } catch { /* fall through */ }
+
+      // Fallback: simple ping
+      const { httpStatus, responseMs } = await pingDivisionSite(endpoint.domain);
+      const status: PingResult["status"] =
+        httpStatus >= 200 && httpStatus < 400 ? "live" :
+        httpStatus >= 400 && httpStatus < 500 ? "degraded" : "offline";
+
+      return { name: endpoint.name, domain: endpoint.domain, status, httpStatus, responseMs, checkedAt, method: "ping" };
+    })
+  );
+  return results;
+}
+
 export interface DivisionStatusResponse {
   division: string;
   status: "live" | "maintenance" | "degraded" | "offline";
