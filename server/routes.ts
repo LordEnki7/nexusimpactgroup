@@ -267,7 +267,7 @@ export async function registerRoutes(
     try {
       const initialDivisions = [
         { name: "C.A.R.E.N.", description: "Automated Roadside Guardian", category: "Safety", status: "live", externalUrl: "https://carenalert.com", tier: 1 },
-        { name: "Real Pulse Verifier", description: "True Identity Validation", category: "Security", status: "live", tier: 2 },
+        { name: "Real Pulse Verifier", description: "True Identity Validation", category: "Security", status: "live", externalUrl: "https://realpulseverifier.com", tier: 2 },
         { name: "My Life Assistant", description: "AI Personal Concierge", category: "AI", status: "live", externalUrl: "https://mylifeassistant.vip", tier: 1 },
         { name: "The Remedy Club", description: "Credit & Debt Freedom", category: "Finance", status: "live", externalUrl: "https://theremedyclub.vip", tier: 1 },
         { name: "Rent-A-Buddy", description: "Platonic Connection", category: "Social", status: "live", externalUrl: "https://rent-a-buddy.info", tier: 2 },

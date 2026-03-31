@@ -27,6 +27,7 @@ export interface CollectionResult {
 
 const DIVISION_ENDPOINTS: { name: string; domain: string }[] = [
   { name: "C.A.R.E.N.", domain: "carenalert.com" },
+  { name: "Real Pulse Verifier", domain: "realpulseverifier.com" },
   { name: "My Life Assistant", domain: "mylifeassistant.vip" },
   { name: "The Remedy Club", domain: "theremedyclub.vip" },
   { name: "Rent-A-Buddy", domain: "rent-a-buddy.info" },

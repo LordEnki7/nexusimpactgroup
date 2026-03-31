@@ -58,7 +58,7 @@ shared/
 
 ## 15 Divisions (14 + NIG Core)
 1. **C.A.R.E.N.** - Citizen Assistance for Roadside Encounters and Navigation (carenalert.com)
-2. **Real Pulse Verifier** - True Identity Validation
+2. **Real Pulse Verifier** - True Identity Validation (realpulseverifier.com)
 3. **My Life Assistant** - AI Personal Concierge (mylifeassistant.vip)
 4. **The Remedy Club** - Credit & Debt Freedom (theremedyclub.vip)
 5. **NIG Core Ecosystem** - Central Intelligence Hub
