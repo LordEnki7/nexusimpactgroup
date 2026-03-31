@@ -11,7 +11,7 @@ const NIG_DIVISIONS = [
   { name: "Zapp Marketing and Manufacturing", category: "Trade", tier: 2, domain: "zapp-ecommerce.online", description: "Global manufacturing & 40,000+ products" },
   { name: "Studio Artist Live", category: "Entertainment", tier: 2, domain: "studioartistlive.com", description: "Creative performance platform" },
   { name: "ClearSpace", category: "Utility", tier: 2, domain: "clearspace.photos", description: "iPhone image cleaner" },
-  { name: "Real Pulse Verifier", category: "Security", tier: 2, domain: "", description: "True identity validation" },
+  { name: "Real Pulse Verifier", category: "Security", tier: 2, domain: "", description: "True identity validation — LIVE" },
   { name: "Right Time Notary", category: "Services", tier: 3, domain: "", description: "Mobile notary services" },
   { name: "The Shock Factor", category: "Entertainment", tier: 3, domain: "", description: "Podcast entertainment" },
   { name: "CAD and Me", category: "Health", tier: 3, domain: "", description: "Coronary artery disease audiobook" },
