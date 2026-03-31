@@ -24,6 +24,8 @@ import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOp
 import { scheduler } from "./agents/scheduler";
 import { collectDivisionData } from "./agents/divisionCollector";
 import { registerCommandCenterAuth, requireCommandCenterAuth } from "./commandCenterAuth";
+import { generateOutreachDraft, generateCrossDivisionRecommendations, summarizeContact, getCrmPipelineSummary } from "./agents/crmAgent";
+import { insertCrmContactSchema, insertCrmDealSchema, insertCrmActivitySchema } from "@shared/schema";
 
 const isAdmin: RequestHandler = requireCommandCenterAuth;
 
@@ -1033,6 +1035,173 @@ export async function registerRoutes(
       res.json({ success: true, divisions: statusByDivision });
     } catch (error) {
       res.status(500).json({ success: false, error: "Failed to get collection status" });
+    }
+  });
+
+  // ── CRM ROUTES ─────────────────────────────────────────────────────────────
+
+  // Pipeline summary
+  app.get("/api/crm/pipeline", isAdmin, async (req, res) => {
+    try {
+      const summary = await getCrmPipelineSummary();
+      res.json({ success: true, summary });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get pipeline summary" });
+    }
+  });
+
+  // Contacts
+  app.get("/api/crm/contacts", isAdmin, async (req, res) => {
+    try {
+      const contacts = await storage.getCrmContacts(req.query.search as string);
+      res.json({ success: true, contacts });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get contacts" });
+    }
+  });
+
+  app.get("/api/crm/contacts/:id", isAdmin, async (req, res) => {
+    try {
+      const contact = await storage.getCrmContact(Number(req.params.id));
+      if (!contact) return res.status(404).json({ success: false, error: "Not found" });
+      const deals = await storage.getCrmDeals(contact.id);
+      const activities = await storage.getCrmActivities(contact.id);
+      res.json({ success: true, contact, deals, activities });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get contact" });
+    }
+  });
+
+  app.post("/api/crm/contacts", isAdmin, async (req, res) => {
+    try {
+      const data = insertCrmContactSchema.parse(req.body);
+      const contact = await storage.createCrmContact(data);
+      res.json({ success: true, contact });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  });
+
+  app.put("/api/crm/contacts/:id", isAdmin, async (req, res) => {
+    try {
+      const contact = await storage.updateCrmContact(Number(req.params.id), req.body);
+      res.json({ success: true, contact });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to update contact" });
+    }
+  });
+
+  app.delete("/api/crm/contacts/:id", isAdmin, async (req, res) => {
+    try {
+      await storage.deleteCrmContact(Number(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to delete contact" });
+    }
+  });
+
+  // CSV import
+  app.post("/api/crm/import", isAdmin, async (req, res) => {
+    try {
+      const { contacts, filename } = req.body;
+      if (!Array.isArray(contacts) || contacts.length === 0) {
+        return res.status(400).json({ success: false, error: "No contacts provided" });
+      }
+      const imp = await storage.createCrmImport({ filename: filename || "import.csv", rowsTotal: contacts.length });
+      const mapped: any[] = contacts.map((row: any) => ({
+        firstName: row.firstName || row["First Name"] || row.first_name || "",
+        lastName: row.lastName || row["Last Name"] || row.last_name || "",
+        email: row.email || row["Email Address"] || row.Email || "",
+        phone: row.phone || row.Phone || "",
+        company: row.company || row.Company || row["Company"] || "",
+        jobTitle: row.jobTitle || row["Job Title"] || row.Position || "",
+        linkedinUrl: row.linkedinUrl || row["LinkedIn URL"] || row.URL || "",
+        source: "csv_import",
+        tags: row.tags || row.Tags || "",
+        notes: row.notes || row.Notes || "",
+      })).filter((c: any) => c.firstName || c.lastName || c.email);
+
+      const result = await storage.bulkCreateCrmContacts(mapped);
+      await storage.updateCrmImport(imp.id, { rowsImported: result.imported, rowsFailed: result.failed, status: "completed" });
+      res.json({ success: true, imported: result.imported, failed: result.failed, importId: imp.id });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Deals
+  app.get("/api/crm/deals", isAdmin, async (req, res) => {
+    try {
+      const deals = await storage.getCrmDeals(
+        req.query.contactId ? Number(req.query.contactId) : undefined,
+        req.query.division as string,
+        req.query.stage as string
+      );
+      res.json({ success: true, deals });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to get deals" });
+    }
+  });
+
+  app.post("/api/crm/deals", isAdmin, async (req, res) => {
+    try {
+      const data = insertCrmDealSchema.parse(req.body);
+      const deal = await storage.createCrmDeal(data);
+      res.json({ success: true, deal });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  });
+
+  app.put("/api/crm/deals/:id", isAdmin, async (req, res) => {
+    try {
+      const deal = await storage.updateCrmDeal(Number(req.params.id), req.body);
+      res.json({ success: true, deal });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Failed to update deal" });
+    }
+  });
+
+  // Activities
+  app.post("/api/crm/activities", isAdmin, async (req, res) => {
+    try {
+      const data = insertCrmActivitySchema.parse(req.body);
+      const activity = await storage.createCrmActivity(data);
+      res.json({ success: true, activity });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  });
+
+  // AI: generate outreach draft
+  app.post("/api/crm/outreach/:contactId/:dealId", isAdmin, async (req, res) => {
+    try {
+      const draft = await generateOutreachDraft(Number(req.params.contactId), Number(req.params.dealId));
+      await storage.updateCrmDeal(Number(req.params.dealId), { aiDraftOutreach: draft });
+      res.json({ success: true, draft });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // AI: cross-division recommendations
+  app.get("/api/crm/recommendations/:contactId", isAdmin, async (req, res) => {
+    try {
+      const recommendations = await generateCrossDivisionRecommendations(Number(req.params.contactId));
+      res.json({ success: true, recommendations });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // AI: summarize contact
+  app.post("/api/crm/summarize/:contactId", isAdmin, async (req, res) => {
+    try {
+      const summary = await summarizeContact(Number(req.params.contactId));
+      await storage.updateCrmContact(Number(req.params.contactId), { aiSummary: summary });
+      res.json({ success: true, summary });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 

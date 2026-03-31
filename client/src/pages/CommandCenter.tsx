@@ -50,7 +50,19 @@ import {
   Database,
   Filter,
   Eye,
-  CircleDot
+  CircleDot,
+  UserPlus,
+  Upload,
+  Phone,
+  Mail,
+  Globe,
+  Building2,
+  X,
+  Plus,
+  ArrowRight,
+  Sparkles,
+  PieChart,
+  Contact
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -115,6 +127,7 @@ export default function CommandCenter() {
     { id: "approvals", label: "Approvals", icon: ThumbsUp, color: "from-green-500 to-emerald-500" },
     { id: "specialists", label: "Specialists", icon: Cpu, color: "from-teal-500 to-emerald-500" },
     { id: "agents", label: "Exec Agents", icon: Bot, color: "from-[#DAA520] to-[#14C1D7]" },
+    { id: "crm", label: "CRM", icon: Contact, color: "from-rose-500 to-pink-500" },
     { id: "reports", label: "Reports", icon: FileText, color: "from-blue-500 to-indigo-500" },
     { id: "memory", label: "Memory", icon: Database, color: "from-purple-500 to-pink-500" },
   ];
@@ -225,6 +238,7 @@ export default function CommandCenter() {
               {activePanel === "orchestrator" && <OrchestratorPanel />}
               {activePanel === "approvals" && <ApprovalsPanel />}
               {activePanel === "specialists" && <SpecialistsPanel />}
+              {activePanel === "crm" && <CRMPanel />}
               {activePanel === "reports" && <ReportsPanel />}
               {activePanel === "memory" && <MemoryPanel />}
 
@@ -2765,6 +2779,485 @@ function MemoryPanel() {
               )}
             </motion.div>
           ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CRM PANEL
+// ─────────────────────────────────────────────────────────────
+
+const PIPELINE_STAGES = ["New Lead", "Contacted", "Qualified", "Proposal Sent", "Closed Won", "Closed Lost"];
+const STAGE_COLORS: Record<string, string> = {
+  "New Lead": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  "Contacted": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+  "Qualified": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  "Proposal Sent": "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  "Closed Won": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  "Closed Lost": "bg-red-500/20 text-red-400 border-red-500/30",
+};
+const NIG_DIVISIONS = [
+  "C.A.R.E.N.", "Real Pulse Verifier", "My Life Assistant", "The Remedy Club",
+  "NIG Core", "Rent-A-Buddy", "Eternal Chase", "Project DNA Music",
+  "Zapp Marketing and Manufacturing", "Studio Artist Live", "Right Time Notary",
+  "The Shock Factor", "ClearSpace", "CAD and Me", "Global Trade Facilitators",
+];
+
+function CRMPanel() {
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [contactDetail, setContactDetail] = useState<{ deals: any[]; activities: any[] } | null>(null);
+  const [pipeline, setPipeline] = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"list" | "pipeline">("list");
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [showAddDeal, setShowAddDeal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [aiLoading, setAiLoading] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [outreachDraft, setOutreachDraft] = useState<string>("");
+  const [error, setError] = useState("");
+
+  // Add contact form
+  const [newContact, setNewContact] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", jobTitle: "", linkedinUrl: "", source: "manual", tags: "", notes: "" });
+  // Add deal form
+  const [newDeal, setNewDeal] = useState({ division: NIG_DIVISIONS[0], stage: "New Lead", value: "0", notes: "" });
+  // CSV import
+  const [importText, setImportText] = useState("");
+  const [importResult, setImportResult] = useState<any>(null);
+
+  useEffect(() => { fetchContacts(); fetchPipeline(); }, []);
+  useEffect(() => { const t = setTimeout(() => fetchContacts(), 300); return () => clearTimeout(t); }, [search]);
+
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const url = search ? `/api/crm/contacts?search=${encodeURIComponent(search)}` : "/api/crm/contacts";
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) setContacts(data.contacts);
+    } catch { setError("Failed to load contacts"); }
+    setLoading(false);
+  };
+
+  const fetchPipeline = async () => {
+    try {
+      const res = await fetch("/api/crm/pipeline");
+      const data = await res.json();
+      if (data.success) setPipeline(data.summary);
+    } catch {}
+  };
+
+  const selectContact = async (contact: any) => {
+    setSelectedContact(contact);
+    setOutreachDraft("");
+    setRecommendations([]);
+    try {
+      const res = await fetch(`/api/crm/contacts/${contact.id}`);
+      const data = await res.json();
+      if (data.success) setContactDetail({ deals: data.deals, activities: data.activities });
+    } catch {}
+  };
+
+  const addContact = async () => {
+    if (!newContact.firstName && !newContact.email) return;
+    try {
+      const res = await fetch("/api/crm/contacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newContact) });
+      const data = await res.json();
+      if (data.success) { fetchContacts(); setShowAddContact(false); setNewContact({ firstName: "", lastName: "", email: "", phone: "", company: "", jobTitle: "", linkedinUrl: "", source: "manual", tags: "", notes: "" }); }
+    } catch { setError("Failed to add contact"); }
+  };
+
+  const addDeal = async () => {
+    if (!selectedContact) return;
+    try {
+      const res = await fetch("/api/crm/deals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newDeal, contactId: selectedContact.id, value: newDeal.value || "0" }) });
+      const data = await res.json();
+      if (data.success) { selectContact(selectedContact); fetchPipeline(); setShowAddDeal(false); }
+    } catch { setError("Failed to add deal"); }
+  };
+
+  const updateDealStage = async (dealId: number, stage: string) => {
+    try {
+      await fetch(`/api/crm/deals/${dealId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage }) });
+      if (selectedContact) selectContact(selectedContact);
+      fetchPipeline();
+    } catch {}
+  };
+
+  const deleteContact = async (id: number) => {
+    if (!confirm("Delete this contact and all their deals?")) return;
+    await fetch(`/api/crm/contacts/${id}`, { method: "DELETE" });
+    setSelectedContact(null); setContactDetail(null);
+    fetchContacts(); fetchPipeline();
+  };
+
+  const generateOutreach = async (dealId: number) => {
+    if (!selectedContact) return;
+    setAiLoading("outreach");
+    try {
+      const res = await fetch(`/api/crm/outreach/${selectedContact.id}/${dealId}`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) setOutreachDraft(data.draft);
+    } catch { setError("AI outreach failed"); }
+    setAiLoading(null);
+  };
+
+  const getRecommendations = async () => {
+    if (!selectedContact) return;
+    setAiLoading("recs");
+    try {
+      const res = await fetch(`/api/crm/recommendations/${selectedContact.id}`);
+      const data = await res.json();
+      if (data.success) setRecommendations(data.recommendations);
+    } catch {}
+    setAiLoading(null);
+  };
+
+  const summarize = async () => {
+    if (!selectedContact) return;
+    setAiLoading("summary");
+    try {
+      const res = await fetch(`/api/crm/summarize/${selectedContact.id}`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) { setSelectedContact((c: any) => ({ ...c, aiSummary: data.summary })); }
+    } catch {}
+    setAiLoading(null);
+  };
+
+  const handleCsvImport = async () => {
+    try {
+      // Parse CSV text
+      const lines = importText.trim().split("\n");
+      if (lines.length < 2) { setError("CSV needs at least a header row and one data row"); return; }
+      const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+      const rows = lines.slice(1).map((line) => {
+        const vals = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+        const obj: Record<string, string> = {};
+        headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+        return obj;
+      });
+      const res = await fetch("/api/crm/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contacts: rows, filename: "paste_import.csv" }) });
+      const data = await res.json();
+      setImportResult(data);
+      if (data.success) { fetchContacts(); fetchPipeline(); }
+    } catch (e: any) { setError(e.message); }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-white font-['Montserrat']">Sales CRM</h2>
+          <p className="text-sm text-gray-400">AI-powered pipeline across all NIG divisions</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setView(view === "list" ? "pipeline" : "list")} className="flex items-center gap-2 px-3 py-2 border border-[#14C1D7]/30 rounded-lg text-[#14C1D7] text-sm hover:bg-[#14C1D7]/10 transition-colors">
+            <PieChart className="w-4 h-4" />{view === "list" ? "Pipeline View" : "Contact List"}
+          </button>
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-3 py-2 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm hover:bg-yellow-500/10 transition-colors">
+            <Upload className="w-4 h-4" />Import CSV
+          </button>
+          <button onClick={() => setShowAddContact(true)} className="flex items-center gap-2 px-3 py-2 bg-rose-500 rounded-lg text-white text-sm font-bold hover:bg-rose-600 transition-colors">
+            <UserPlus className="w-4 h-4" />Add Contact
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg">{error}<button className="ml-3 text-red-300 hover:text-white" onClick={() => setError("")}>✕</button></p>}
+
+      {/* Pipeline stats */}
+      {pipeline && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Total Contacts", value: pipeline.totalContacts, color: "text-white" },
+            { label: "Total Deals", value: pipeline.totalDeals, color: "text-rose-400" },
+            { label: "Pipeline Value", value: `$${Number(pipeline.totalPipelineValue || 0).toLocaleString()}`, color: "text-[#DAA520]" },
+            { label: "Closed Won", value: `$${Number(pipeline.closedWonValue || 0).toLocaleString()}`, color: "text-emerald-400" },
+          ].map((s) => (
+            <div key={s.label} className="p-4 rounded-xl border border-white/10 bg-[#0B1B3F]/40 text-center">
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pipeline View */}
+      {view === "pipeline" && pipeline && (
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-3 min-w-max">
+            {PIPELINE_STAGES.map((stage) => (
+              <div key={stage} className="w-52 flex-shrink-0">
+                <div className={`px-3 py-1.5 rounded-lg text-xs font-bold border mb-2 text-center ${STAGE_COLORS[stage]}`}>{stage} ({pipeline.byStage?.[stage] || 0})</div>
+                <div className="space-y-2 min-h-16">
+                  {contacts.flatMap(() => []).length === 0 && <p className="text-xs text-gray-600 text-center pt-4">—</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-3">Switch to Contact List view to manage individual deals and move them through stages.</p>
+        </div>
+      )}
+
+      {/* List View */}
+      {view === "list" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Contact list */}
+          <div className="lg:col-span-1 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search contacts..." className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-rose-500/50" data-testid="input-crm-search" />
+            </div>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {loading && <p className="text-xs text-gray-500 text-center py-4">Loading...</p>}
+              {!loading && contacts.length === 0 && <p className="text-xs text-gray-500 text-center py-8">No contacts yet. Add one or import a CSV.</p>}
+              {contacts.map((c) => (
+                <button key={c.id} onClick={() => selectContact(c)} data-testid={`contact-card-${c.id}`}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${selectedContact?.id === c.id ? "border-rose-500/50 bg-rose-500/10" : "border-white/5 bg-[#0B1B3F]/40 hover:border-white/20"}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {(c.firstName?.[0] || c.email?.[0] || "?").toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{c.firstName} {c.lastName}</p>
+                      <p className="text-xs text-gray-500 truncate">{c.company || c.email || "No info"}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact detail */}
+          <div className="lg:col-span-2">
+            {!selectedContact ? (
+              <div className="h-full flex items-center justify-center border border-dashed border-white/10 rounded-xl p-12 text-center">
+                <div>
+                  <Contact className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">Select a contact to view details</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Contact header */}
+                <div className="p-5 rounded-xl border border-rose-500/20 bg-[#0B1B3F]/40">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-lg font-bold">
+                        {(selectedContact.firstName?.[0] || selectedContact.email?.[0] || "?").toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{selectedContact.firstName} {selectedContact.lastName}</h3>
+                        <p className="text-sm text-gray-400">{selectedContact.jobTitle}{selectedContact.jobTitle && selectedContact.company ? " @ " : ""}{selectedContact.company}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowAddDeal(true)} className="flex items-center gap-1 px-3 py-1.5 bg-rose-500/20 border border-rose-500/30 rounded-lg text-rose-400 text-xs hover:bg-rose-500/30 transition-colors">
+                        <Plus className="w-3 h-3" />Add Deal
+                      </button>
+                      <button onClick={() => deleteContact(selectedContact.id)} className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs hover:bg-red-500/20 transition-colors">
+                        <X className="w-3 h-3" />Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-400">
+                    {selectedContact.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{selectedContact.email}</span>}
+                    {selectedContact.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{selectedContact.phone}</span>}
+                    {selectedContact.linkedinUrl && <a href={selectedContact.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-400 hover:underline"><Globe className="w-3 h-3" />LinkedIn</a>}
+                    <span className="flex items-center gap-1 text-gray-600">Source: {selectedContact.source}</span>
+                  </div>
+
+                  {/* AI Summary */}
+                  {selectedContact.aiSummary && (
+                    <p className="mt-3 text-xs text-gray-300 bg-black/20 rounded-lg px-3 py-2 border border-white/5">{selectedContact.aiSummary}</p>
+                  )}
+
+                  {/* AI Buttons */}
+                  <div className="flex gap-2 mt-4 flex-wrap">
+                    <button onClick={summarize} disabled={aiLoading === "summary"} className="flex items-center gap-1 px-3 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-xs hover:bg-purple-500/30 transition-colors disabled:opacity-50">
+                      <Sparkles className="w-3 h-3" />{aiLoading === "summary" ? "Summarizing..." : "AI Summary"}
+                    </button>
+                    <button onClick={getRecommendations} disabled={aiLoading === "recs"} className="flex items-center gap-1 px-3 py-1.5 bg-[#14C1D7]/20 border border-[#14C1D7]/30 rounded-lg text-[#14C1D7] text-xs hover:bg-[#14C1D7]/30 transition-colors disabled:opacity-50">
+                      <Sparkles className="w-3 h-3" />{aiLoading === "recs" ? "Analyzing..." : "Cross-Division Recs"}
+                    </button>
+                  </div>
+
+                  {recommendations.length > 0 && (
+                    <div className="mt-3 p-3 bg-[#14C1D7]/10 border border-[#14C1D7]/20 rounded-lg">
+                      <p className="text-xs text-[#14C1D7] font-bold mb-2">Recommended divisions for this contact:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {recommendations.map((r) => (
+                          <span key={r} className="px-2 py-1 bg-[#14C1D7]/20 text-[#14C1D7] text-xs rounded-full">{r}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Deals */}
+                {contactDetail && contactDetail.deals.length > 0 && (
+                  <div className="p-5 rounded-xl border border-white/10 bg-[#0B1B3F]/40">
+                    <h4 className="text-sm font-bold text-white mb-3">Deals</h4>
+                    <div className="space-y-3">
+                      {contactDetail.deals.map((deal) => (
+                        <div key={deal.id} className="p-3 rounded-lg bg-black/20 border border-white/5">
+                          <div className="flex items-start justify-between gap-2 flex-wrap">
+                            <div>
+                              <p className="text-sm font-medium text-white">{deal.division}</p>
+                              <p className="text-xs text-gray-500">${Number(deal.value || 0).toLocaleString()} · {deal.expectedCloseDate || "No close date"}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select value={deal.stage} onChange={(e) => updateDealStage(deal.id, e.target.value)}
+                                className={`text-xs px-2 py-1 rounded-full border font-semibold bg-transparent cursor-pointer ${STAGE_COLORS[deal.stage]}`}
+                                data-testid={`deal-stage-${deal.id}`}>
+                                {PIPELINE_STAGES.map((s) => <option key={s} value={s} className="bg-[#0B1B3F] text-white">{s}</option>)}
+                              </select>
+                              <button onClick={() => generateOutreach(deal.id)} disabled={aiLoading === "outreach"} className="flex items-center gap-1 px-2 py-1 bg-rose-500/20 border border-rose-500/30 rounded text-rose-400 text-xs hover:bg-rose-500/30 transition-colors disabled:opacity-50">
+                                <Send className="w-3 h-3" />{aiLoading === "outreach" ? "..." : "Draft"}
+                              </button>
+                            </div>
+                          </div>
+                          {deal.aiDraftOutreach && (
+                            <div className="mt-2 p-2 bg-rose-500/5 border border-rose-500/20 rounded text-xs text-gray-300 whitespace-pre-wrap">{deal.aiDraftOutreach}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {outreachDraft && !contactDetail.deals.some((d) => d.aiDraftOutreach) && (
+                      <div className="mt-3 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                        <p className="text-xs text-rose-400 font-bold mb-1">AI Outreach Draft</p>
+                        <p className="text-xs text-gray-300 whitespace-pre-wrap">{outreachDraft}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Activity log */}
+                {contactDetail && contactDetail.activities.length > 0 && (
+                  <div className="p-5 rounded-xl border border-white/10 bg-[#0B1B3F]/40">
+                    <h4 className="text-sm font-bold text-white mb-3">Activity</h4>
+                    <div className="space-y-2">
+                      {contactDetail.activities.slice(0, 5).map((a) => (
+                        <div key={a.id} className="flex gap-3 text-xs">
+                          <span className="text-gray-600 font-mono flex-shrink-0">{new Date(a.createdAt).toLocaleDateString()}</span>
+                          <span className="text-[#14C1D7] capitalize flex-shrink-0">{a.type}</span>
+                          <span className="text-gray-300">{a.subject}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Contact Modal */}
+      {showAddContact && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-[#0d1f4a] border border-rose-500/30 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-white">Add Contact</h3>
+              <button onClick={() => setShowAddContact(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[["First Name*", "firstName"], ["Last Name", "lastName"], ["Email", "email"], ["Phone", "phone"], ["Company", "company"], ["Job Title", "jobTitle"]].map(([label, key]) => (
+                <div key={key}>
+                  <label className="text-xs text-gray-500 mb-1 block">{label}</label>
+                  <input value={(newContact as any)[key]} onChange={(e) => setNewContact((p) => ({ ...p, [key]: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none focus:border-rose-500/50"
+                    data-testid={`input-new-contact-${key}`} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-3">
+              <label className="text-xs text-gray-500 mb-1 block">LinkedIn URL</label>
+              <input value={newContact.linkedinUrl} onChange={(e) => setNewContact((p) => ({ ...p, linkedinUrl: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none focus:border-rose-500/50" />
+            </div>
+            <div className="mt-3">
+              <label className="text-xs text-gray-500 mb-1 block">Notes</label>
+              <textarea value={newContact.notes} onChange={(e) => setNewContact((p) => ({ ...p, notes: e.target.value }))} rows={2}
+                className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none focus:border-rose-500/50 resize-none" />
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowAddContact(false)} className="flex-1 py-2 border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5">Cancel</button>
+              <button onClick={addContact} className="flex-1 py-2 bg-rose-500 rounded-lg text-white text-sm font-bold hover:bg-rose-600" data-testid="button-save-contact">Save Contact</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Deal Modal */}
+      {showAddDeal && selectedContact && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#0d1f4a] border border-rose-500/30 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-white">New Deal for {selectedContact.firstName}</h3>
+              <button onClick={() => setShowAddDeal(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Division</label>
+                <select value={newDeal.division} onChange={(e) => setNewDeal((p) => ({ ...p, division: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none" data-testid="select-deal-division">
+                  {NIG_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Stage</label>
+                <select value={newDeal.stage} onChange={(e) => setNewDeal((p) => ({ ...p, stage: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none">
+                  {PIPELINE_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Deal Value ($)</label>
+                <input type="number" value={newDeal.value} onChange={(e) => setNewDeal((p) => ({ ...p, value: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Notes</label>
+                <textarea value={newDeal.notes} onChange={(e) => setNewDeal((p) => ({ ...p, notes: e.target.value }))} rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-sm text-white resize-none focus:outline-none" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowAddDeal(false)} className="flex-1 py-2 border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5">Cancel</button>
+              <button onClick={addDeal} className="flex-1 py-2 bg-rose-500 rounded-lg text-white text-sm font-bold hover:bg-rose-600" data-testid="button-save-deal">Create Deal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV Import Modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-[#0d1f4a] border border-yellow-500/30 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Import Contacts</h3>
+              <button onClick={() => { setShowImport(false); setImportText(""); setImportResult(null); }} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">Paste CSV data below. First row must be headers. Recognized columns: <span className="text-yellow-400">First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL</span> (LinkedIn export format works directly).</p>
+            <textarea value={importText} onChange={(e) => setImportText(e.target.value)} rows={8} placeholder="First Name,Last Name,Email Address,Company,Job Title&#10;John,Doe,john@example.com,Acme Inc,CEO"
+              className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-xs text-gray-300 font-mono focus:outline-none focus:border-yellow-500/50 resize-none" data-testid="textarea-csv-import" />
+            {importResult && (
+              <div className={`mt-3 px-4 py-2 rounded-lg border text-sm ${importResult.success ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-red-500/30 bg-red-500/10 text-red-400"}`}>
+                {importResult.success ? `✓ Imported ${importResult.imported} contacts (${importResult.failed} failed)` : `Error: ${importResult.error}`}
+              </div>
+            )}
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => { setShowImport(false); setImportText(""); setImportResult(null); }} className="flex-1 py-2 border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5">Close</button>
+              <button onClick={handleCsvImport} disabled={!importText.trim()} className="flex-1 py-2 bg-yellow-500 rounded-lg text-black text-sm font-bold hover:bg-yellow-400 disabled:opacity-50" data-testid="button-import-csv">Import</button>
+            </div>
+          </div>
         </div>
       )}
     </motion.div>

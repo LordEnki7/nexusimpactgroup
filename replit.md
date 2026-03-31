@@ -206,6 +206,46 @@ The app is prepared for deployment outside Replit:
 - **Build**: `npm run build` produces `dist/index.cjs` (server) and `dist/public/` (client).
 - **Run**: `npm start` or `node dist/index.cjs` in production.
 
+## Sales CRM Agent
+
+A full AI-powered CRM panel added to the Command Center:
+
+### Features
+- **Contact Management** — Add, search, edit, delete contacts with name, email, phone, company, job title, LinkedIn URL, notes, tags
+- **Per-Division Pipelines** — Each contact can have separate deals for each NIG division; stages: New Lead → Contacted → Qualified → Proposal Sent → Closed Won / Closed Lost
+- **CSV Import** — Paste CSV data directly (supports LinkedIn export format: First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL)
+- **AI Outreach Drafts** — One-click AI-generated personalized outreach message for any deal using GPT-4o
+- **Cross-Division Recommendations** — AI analyzes contact profile and recommends which other divisions they'd be interested in
+- **AI Contact Summary** — AI generates a 2-3 sentence sales-ready summary stored on the contact
+- **Pipeline Dashboard** — Stats: total contacts, total deals, pipeline value, closed-won value; breakdown by stage and division
+
+### Database Tables
+- `crm_contacts` — Master contact/lead records
+- `crm_deals` — One deal per contact per division with pipeline stage
+- `crm_activities` — Activity log per contact/deal
+- `crm_imports` — CSV import tracking
+
+### CRM API Endpoints
+- `GET /api/crm/pipeline` — Pipeline summary stats
+- `GET /api/crm/contacts` — List contacts (with optional ?search=)
+- `POST /api/crm/contacts` — Create contact
+- `PUT /api/crm/contacts/:id` — Update contact
+- `DELETE /api/crm/contacts/:id` — Delete contact + deals + activities
+- `POST /api/crm/import` — Bulk CSV import
+- `GET /api/crm/deals` — List deals (filterable by contactId, division, stage)
+- `POST /api/crm/deals` — Create deal
+- `PUT /api/crm/deals/:id` — Update deal (including stage changes)
+- `POST /api/crm/activities` — Log activity
+- `POST /api/crm/outreach/:contactId/:dealId` — AI generate outreach draft
+- `GET /api/crm/recommendations/:contactId` — AI cross-division recommendations
+- `POST /api/crm/summarize/:contactId` — AI contact summary
+
+### CRM Agent (`server/agents/crmAgent.ts`)
+- `generateOutreachDraft(contactId, dealId)` — GPT-4o personalized outreach
+- `generateCrossDivisionRecommendations(contactId)` — Division upsell suggestions
+- `summarizeContact(contactId)` — Sales context summary
+- `getCrmPipelineSummary()` — Full pipeline analytics
+
 ## User Preferences
 - Futuristic, tech-forward design aesthetic
 - NIG logo with intertwining rings for Core Ecosystem

@@ -29,6 +29,13 @@ import {
   type InsertAgentMemory,
   type DailyBrief,
   type InsertDailyBrief,
+  type CrmContact,
+  type InsertCrmContact,
+  type CrmDeal,
+  type InsertCrmDeal,
+  type CrmActivity,
+  type InsertCrmActivity,
+  type CrmImport,
   users,
   inquiries,
   subscribers,
@@ -43,7 +50,11 @@ import {
   orchestratorProposals,
   executionReports,
   agentMemory,
-  dailyBriefs
+  dailyBriefs,
+  crmContacts,
+  crmDeals,
+  crmActivities,
+  crmImports,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, and } from "drizzle-orm";
@@ -102,6 +113,25 @@ export interface IStorage {
   createDailyBrief(brief: InsertDailyBrief): Promise<DailyBrief>;
   getLatestBrief(): Promise<DailyBrief | undefined>;
   getDailyBriefs(limit?: number): Promise<DailyBrief[]>;
+
+  // CRM
+  getCrmContacts(search?: string, limit?: number): Promise<CrmContact[]>;
+  getCrmContact(id: number): Promise<CrmContact | undefined>;
+  createCrmContact(contact: InsertCrmContact): Promise<CrmContact>;
+  updateCrmContact(id: number, updates: Partial<CrmContact>): Promise<CrmContact | undefined>;
+  deleteCrmContact(id: number): Promise<void>;
+  bulkCreateCrmContacts(contacts: InsertCrmContact[]): Promise<{ imported: number; failed: number }>;
+
+  getCrmDeals(contactId?: number, division?: string, stage?: string): Promise<CrmDeal[]>;
+  getCrmDeal(id: number): Promise<CrmDeal | undefined>;
+  createCrmDeal(deal: InsertCrmDeal): Promise<CrmDeal>;
+  updateCrmDeal(id: number, updates: Partial<CrmDeal>): Promise<CrmDeal | undefined>;
+
+  getCrmActivities(contactId?: number, dealId?: number): Promise<CrmActivity[]>;
+  createCrmActivity(activity: InsertCrmActivity): Promise<CrmActivity>;
+
+  createCrmImport(imp: { filename: string; rowsTotal: number }): Promise<CrmImport>;
+  updateCrmImport(id: number, updates: Partial<CrmImport>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -309,6 +339,102 @@ export class DatabaseStorage implements IStorage {
 
   async getDailyBriefs(limit: number = 10): Promise<DailyBrief[]> {
     return await db.select().from(dailyBriefs).orderBy(desc(dailyBriefs.createdAt)).limit(limit);
+  }
+
+  // ── CRM ──────────────────────────────────────────────────────────────────
+
+  async getCrmContacts(search?: string, limit: number = 100): Promise<CrmContact[]> {
+    if (search) {
+      const { ilike, or } = await import("drizzle-orm");
+      const term = `%${search}%`;
+      return await db.select().from(crmContacts)
+        .where(or(ilike(crmContacts.firstName, term), ilike(crmContacts.lastName, term), ilike(crmContacts.email, term), ilike(crmContacts.company, term)))
+        .orderBy(desc(crmContacts.createdAt)).limit(limit);
+    }
+    return await db.select().from(crmContacts).orderBy(desc(crmContacts.createdAt)).limit(limit);
+  }
+
+  async getCrmContact(id: number): Promise<CrmContact | undefined> {
+    const [c] = await db.select().from(crmContacts).where(eq(crmContacts.id, id));
+    return c;
+  }
+
+  async createCrmContact(contact: InsertCrmContact): Promise<CrmContact> {
+    const [c] = await db.insert(crmContacts).values(contact).returning();
+    return c;
+  }
+
+  async updateCrmContact(id: number, updates: Partial<CrmContact>): Promise<CrmContact | undefined> {
+    const [c] = await db.update(crmContacts).set({ ...updates, updatedAt: new Date() }).where(eq(crmContacts.id, id)).returning();
+    return c;
+  }
+
+  async deleteCrmContact(id: number): Promise<void> {
+    await db.delete(crmDeals).where(eq(crmDeals.contactId, id));
+    await db.delete(crmActivities).where(eq(crmActivities.contactId, id));
+    await db.delete(crmContacts).where(eq(crmContacts.id, id));
+  }
+
+  async bulkCreateCrmContacts(contacts: InsertCrmContact[]): Promise<{ imported: number; failed: number }> {
+    let imported = 0;
+    let failed = 0;
+    for (const contact of contacts) {
+      try {
+        await db.insert(crmContacts).values(contact);
+        imported++;
+      } catch {
+        failed++;
+      }
+    }
+    return { imported, failed };
+  }
+
+  async getCrmDeals(contactId?: number, division?: string, stage?: string): Promise<CrmDeal[]> {
+    let query = db.select().from(crmDeals).$dynamic();
+    const conditions = [];
+    if (contactId) conditions.push(eq(crmDeals.contactId, contactId));
+    if (division) conditions.push(eq(crmDeals.division, division));
+    if (stage) conditions.push(eq(crmDeals.stage, stage));
+    if (conditions.length > 0) {
+      const { and } = await import("drizzle-orm");
+      query = query.where(and(...conditions));
+    }
+    return await query.orderBy(desc(crmDeals.updatedAt));
+  }
+
+  async getCrmDeal(id: number): Promise<CrmDeal | undefined> {
+    const [d] = await db.select().from(crmDeals).where(eq(crmDeals.id, id));
+    return d;
+  }
+
+  async createCrmDeal(deal: InsertCrmDeal): Promise<CrmDeal> {
+    const [d] = await db.insert(crmDeals).values(deal).returning();
+    return d;
+  }
+
+  async updateCrmDeal(id: number, updates: Partial<CrmDeal>): Promise<CrmDeal | undefined> {
+    const [d] = await db.update(crmDeals).set({ ...updates, updatedAt: new Date() }).where(eq(crmDeals.id, id)).returning();
+    return d;
+  }
+
+  async getCrmActivities(contactId?: number, dealId?: number): Promise<CrmActivity[]> {
+    if (contactId) return await db.select().from(crmActivities).where(eq(crmActivities.contactId, contactId)).orderBy(desc(crmActivities.createdAt));
+    if (dealId) return await db.select().from(crmActivities).where(eq(crmActivities.dealId, dealId)).orderBy(desc(crmActivities.createdAt));
+    return await db.select().from(crmActivities).orderBy(desc(crmActivities.createdAt)).limit(50);
+  }
+
+  async createCrmActivity(activity: InsertCrmActivity): Promise<CrmActivity> {
+    const [a] = await db.insert(crmActivities).values(activity).returning();
+    return a;
+  }
+
+  async createCrmImport(imp: { filename: string; rowsTotal: number }): Promise<CrmImport> {
+    const [i] = await db.insert(crmImports).values({ filename: imp.filename, rowsTotal: imp.rowsTotal, status: "processing" }).returning();
+    return i;
+  }
+
+  async updateCrmImport(id: number, updates: Partial<CrmImport>): Promise<void> {
+    await db.update(crmImports).set(updates).where(eq(crmImports.id, id));
   }
 }
 

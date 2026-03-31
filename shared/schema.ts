@@ -303,6 +303,87 @@ export type InsertAgentMemory = z.infer<typeof insertAgentMemorySchema>;
 export type DailyBrief = typeof dailyBriefs.$inferSelect;
 export type InsertDailyBrief = z.infer<typeof insertDailyBriefSchema>;
 
+// ============================================
+// NIG SALES CRM SCHEMA
+// ============================================
+
+export const crmContacts = pgTable("crm_contacts", {
+  id: serial("id").primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  company: text("company"),
+  jobTitle: text("job_title"),
+  linkedinUrl: text("linkedin_url"),
+  source: text("source").default("manual"),
+  tags: text("tags"),
+  notes: text("notes"),
+  aiSummary: text("ai_summary"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmDeals = pgTable("crm_deals", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  division: text("division").notNull(),
+  stage: text("stage").notNull().default("New Lead"),
+  value: decimal("value", { precision: 15, scale: 2 }).default("0"),
+  probability: integer("probability").default(10),
+  notes: text("notes"),
+  aiDraftOutreach: text("ai_draft_outreach"),
+  closedAt: timestamp("closed_at"),
+  expectedCloseDate: text("expected_close_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crmActivities = pgTable("crm_activities", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  dealId: integer("deal_id"),
+  type: text("type").notNull().default("note"),
+  subject: text("subject").notNull(),
+  body: text("body"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crmImports = pgTable("crm_imports", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  rowsTotal: integer("rows_total").default(0),
+  rowsImported: integer("rows_imported").default(0),
+  rowsFailed: integer("rows_failed").default(0),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCrmContactSchema = createInsertSchema(crmContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCrmDealSchema = createInsertSchema(crmDeals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCrmActivitySchema = createInsertSchema(crmActivities).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type CrmContact = typeof crmContacts.$inferSelect;
+export type InsertCrmContact = z.infer<typeof insertCrmContactSchema>;
+export type CrmDeal = typeof crmDeals.$inferSelect;
+export type InsertCrmDeal = z.infer<typeof insertCrmDealSchema>;
+export type CrmActivity = typeof crmActivities.$inferSelect;
+export type InsertCrmActivity = z.infer<typeof insertCrmActivitySchema>;
+export type CrmImport = typeof crmImports.$inferSelect;
+
 // Auth schema (mandatory for Replit Auth)
 export * from "./models/auth";
 
