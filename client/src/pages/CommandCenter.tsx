@@ -2805,6 +2805,15 @@ const NIG_DIVISIONS = [
   "The Shock Factor", "ClearSpace", "CAD and Me", "Global Trade Facilitators",
 ];
 
+async function apiFetch(url: string, options?: RequestInit) {
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+    window.location.href = "/login";
+    throw new Error("Session expired — redirecting to login");
+  }
+  return res;
+}
+
 function CRMPanel() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [selectedContact, setSelectedContact] = useState<any>(null);
@@ -2838,7 +2847,7 @@ function CRMPanel() {
     setLoading(true);
     try {
       const url = search ? `/api/crm/contacts?search=${encodeURIComponent(search)}` : "/api/crm/contacts";
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const data = await res.json();
       if (data.success) setContacts(data.contacts);
     } catch { setError("Failed to load contacts"); }
@@ -2847,7 +2856,7 @@ function CRMPanel() {
 
   const fetchPipeline = async () => {
     try {
-      const res = await fetch("/api/crm/pipeline");
+      const res = await apiFetch("/api/crm/pipeline");
       const data = await res.json();
       if (data.success) setPipeline(data.summary);
     } catch {}
@@ -2858,7 +2867,7 @@ function CRMPanel() {
     setOutreachDraft("");
     setRecommendations([]);
     try {
-      const res = await fetch(`/api/crm/contacts/${contact.id}`);
+      const res = await apiFetch(`/api/crm/contacts/${contact.id}`);
       const data = await res.json();
       if (data.success) setContactDetail({ deals: data.deals, activities: data.activities });
     } catch {}
@@ -2867,7 +2876,7 @@ function CRMPanel() {
   const addContact = async () => {
     if (!newContact.firstName && !newContact.email) return;
     try {
-      const res = await fetch("/api/crm/contacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newContact) });
+      const res = await apiFetch("/api/crm/contacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newContact) });
       const data = await res.json();
       if (data.success) { fetchContacts(); setShowAddContact(false); setNewContact({ firstName: "", lastName: "", email: "", phone: "", company: "", jobTitle: "", linkedinUrl: "", source: "manual", tags: "", notes: "" }); }
     } catch { setError("Failed to add contact"); }
@@ -2876,7 +2885,7 @@ function CRMPanel() {
   const addDeal = async () => {
     if (!selectedContact) return;
     try {
-      const res = await fetch("/api/crm/deals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newDeal, contactId: selectedContact.id, value: newDeal.value || "0" }) });
+      const res = await apiFetch("/api/crm/deals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...newDeal, contactId: selectedContact.id, value: newDeal.value || "0" }) });
       const data = await res.json();
       if (data.success) { selectContact(selectedContact); fetchPipeline(); setShowAddDeal(false); }
     } catch { setError("Failed to add deal"); }
@@ -2884,7 +2893,7 @@ function CRMPanel() {
 
   const updateDealStage = async (dealId: number, stage: string) => {
     try {
-      await fetch(`/api/crm/deals/${dealId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage }) });
+      await apiFetch(`/api/crm/deals/${dealId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage }) });
       if (selectedContact) selectContact(selectedContact);
       fetchPipeline();
     } catch {}
@@ -2892,7 +2901,7 @@ function CRMPanel() {
 
   const deleteContact = async (id: number) => {
     if (!confirm("Delete this contact and all their deals?")) return;
-    await fetch(`/api/crm/contacts/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/crm/contacts/${id}`, { method: "DELETE" });
     setSelectedContact(null); setContactDetail(null);
     fetchContacts(); fetchPipeline();
   };
@@ -2901,7 +2910,7 @@ function CRMPanel() {
     if (!selectedContact) return;
     setAiLoading("outreach");
     try {
-      const res = await fetch(`/api/crm/outreach/${selectedContact.id}/${dealId}`, { method: "POST" });
+      const res = await apiFetch(`/api/crm/outreach/${selectedContact.id}/${dealId}`, { method: "POST" });
       const data = await res.json();
       if (data.success) setOutreachDraft(data.draft);
     } catch { setError("AI outreach failed"); }
@@ -2912,7 +2921,7 @@ function CRMPanel() {
     if (!selectedContact) return;
     setAiLoading("recs");
     try {
-      const res = await fetch(`/api/crm/recommendations/${selectedContact.id}`);
+      const res = await apiFetch(`/api/crm/recommendations/${selectedContact.id}`);
       const data = await res.json();
       if (data.success) setRecommendations(data.recommendations);
     } catch {}
@@ -2923,7 +2932,7 @@ function CRMPanel() {
     if (!selectedContact) return;
     setAiLoading("summary");
     try {
-      const res = await fetch(`/api/crm/summarize/${selectedContact.id}`, { method: "POST" });
+      const res = await apiFetch(`/api/crm/summarize/${selectedContact.id}`, { method: "POST" });
       const data = await res.json();
       if (data.success) { setSelectedContact((c: any) => ({ ...c, aiSummary: data.summary })); }
     } catch {}
@@ -2978,7 +2987,7 @@ function CRMPanel() {
     try {
       const rows = parseCSV(importText);
       if (rows.length === 0) { setError("No valid rows found. Make sure your CSV has a header row and at least one data row."); return; }
-      const res = await fetch("/api/crm/import", {
+      const res = await apiFetch("/api/crm/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contacts: rows, filename: "csv_import.csv" }),
