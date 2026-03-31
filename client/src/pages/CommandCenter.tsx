@@ -2304,6 +2304,80 @@ function ApprovalsPanel() {
   );
 }
 
+function SpecialistResultView({ result, colors }: { result: any; colors: any }) {
+  if (typeof result === "string") {
+    return <p className="text-sm text-gray-300 whitespace-pre-wrap">{result}</p>;
+  }
+
+  const renderList = (items: any[], accentColor: string) => {
+    if (!Array.isArray(items) || items.length === 0)
+      return <p className="text-xs text-gray-500 italic">None identified yet</p>;
+    return (
+      <ul className="space-y-1">
+        {items.map((item: any, i: number) => (
+          <li key={i} className="flex gap-2 text-sm text-gray-300">
+            <span className={`mt-0.5 flex-shrink-0 ${accentColor}`}>›</span>
+            <span>{typeof item === "string" ? item : item.title || item.name || item.action || item.description || item.opportunity || item.stream || item.campaign || item.improvement || item.inefficiency || JSON.stringify(item)}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const sections: { label: string; key: string }[] = [
+    { label: "Opportunities", key: "opportunities" },
+    { label: "Market Trends", key: "market_trends" },
+    { label: "Competitive Insights", key: "competitive_insights" },
+    { label: "Revenue Streams", key: "revenue_streams" },
+    { label: "Cross-Sell Opportunities", key: "cross_sell_opportunities" },
+    { label: "Campaigns", key: "campaigns" },
+    { label: "Funnel Optimizations", key: "funnel_optimizations" },
+    { label: "Viral Opportunities", key: "viral_opportunities" },
+    { label: "Inefficiencies Found", key: "inefficiencies" },
+    { label: "Automations", key: "automations" },
+    { label: "Workflow Improvements", key: "workflow_improvements" },
+  ];
+
+  const accent = colors.text || "text-[#14C1D7]";
+
+  return (
+    <div className="space-y-3">
+      {result.summary && (
+        <p className="text-sm text-gray-200 leading-relaxed border-b border-white/10 pb-3">{result.summary}</p>
+      )}
+
+      {result.total_estimated_new_revenue && result.total_estimated_new_revenue !== "$0" && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Estimated New Revenue:</span>
+          <span className={`text-sm font-bold ${accent}`}>{result.total_estimated_new_revenue}</span>
+        </div>
+      )}
+
+      {typeof result.system_health_score === "number" && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">System Health Score:</span>
+          <span className={`text-sm font-bold ${result.system_health_score >= 70 ? "text-emerald-400" : result.system_health_score >= 40 ? "text-yellow-400" : "text-red-400"}`}>
+            {result.system_health_score}/100
+          </span>
+        </div>
+      )}
+
+      {sections.map(({ label, key }) =>
+        Array.isArray(result[key]) ? (
+          <div key={key}>
+            <p className={`text-xs uppercase tracking-wider mb-2 ${accent} opacity-70`}>{label}</p>
+            {renderList(result[key], accent)}
+          </div>
+        ) : null
+      )}
+
+      {result.summary === undefined && sections.every(({ key }) => !Array.isArray(result[key])) && (
+        <p className="text-xs text-gray-400 italic">Analysis complete — no structured data returned.</p>
+      )}
+    </div>
+  );
+}
+
 function SpecialistsPanel() {
   const [results, setResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -2399,12 +2473,10 @@ function SpecialistsPanel() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 rounded-lg bg-black/30 border border-white/5 max-h-60 overflow-y-auto"
+                  className="p-4 rounded-lg bg-black/30 border border-white/5 max-h-80 overflow-y-auto"
                   data-testid={`result-${spec.id}`}
                 >
-                  <p className="text-sm text-gray-300 whitespace-pre-wrap">
-                    {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
-                  </p>
+                  <SpecialistResultView result={result} colors={colors} />
                 </motion.div>
               )}
             </motion.div>
