@@ -1108,17 +1108,27 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, error: "No contacts provided" });
       }
       const imp = await storage.createCrmImport({ filename: filename || "import.csv", rowsTotal: contacts.length });
+      const pick = (row: any, ...keys: string[]) => {
+        for (const k of keys) { if (row[k] && String(row[k]).trim()) return String(row[k]).trim(); }
+        return "";
+      };
       const mapped: any[] = contacts.map((row: any) => ({
-        firstName: row.firstName || row["First Name"] || row.first_name || "",
-        lastName: row.lastName || row["Last Name"] || row.last_name || "",
-        email: row.email || row["Email Address"] || row.Email || "",
-        phone: row.phone || row.Phone || "",
-        company: row.company || row.Company || row["Company"] || "",
-        jobTitle: row.jobTitle || row["Job Title"] || row.Position || "",
-        linkedinUrl: row.linkedinUrl || row["LinkedIn URL"] || row.URL || "",
+        firstName: pick(row, "First Name", "firstName", "first_name", "Given Name"),
+        lastName: pick(row, "Last Name", "lastName", "last_name", "Family Name", "Surname"),
+        email: pick(row,
+          "E-mail Address", "Email Address", "email", "Email",
+          "E-mail 2 Address", "E-mail 3 Address"
+        ),
+        phone: pick(row,
+          "Mobile Phone", "Home Phone", "Business Phone",
+          "Phone", "phone", "Mobile", "Cell Phone", "Work Phone"
+        ),
+        company: pick(row, "Company", "company", "Organization", "Employer", "Business"),
+        jobTitle: pick(row, "Job Title", "jobTitle", "job_title", "Title", "Position", "Role"),
+        linkedinUrl: pick(row, "LinkedIn URL", "linkedinUrl", "LinkedIn", "URL", "Website"),
         source: "csv_import",
-        tags: row.tags || row.Tags || "",
-        notes: row.notes || row.Notes || "",
+        tags: pick(row, "Tags", "tags", "Category", "Group"),
+        notes: pick(row, "Notes", "notes", "Description", "Comments"),
       })).filter((c: any) => c.firstName || c.lastName || c.email);
 
       const result = await storage.bulkCreateCrmContacts(mapped);

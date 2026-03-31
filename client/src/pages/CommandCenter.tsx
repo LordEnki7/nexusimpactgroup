@@ -3334,8 +3334,8 @@ function CRMPanel() {
             </div>
 
             <p className="text-xs text-gray-500 mb-2">
-              Recognized columns: <span className="text-yellow-400">First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL</span>
-              <br />LinkedIn export format works directly. First row must be headers.
+              Supports <span className="text-yellow-400">Yahoo Contacts</span>, <span className="text-yellow-400">LinkedIn</span>, Google, Outlook, and most standard CSV exports.
+              <br />First Name, Last Name, and Email are auto-detected. First row must be headers.
             </p>
 
             {/* Preview row count */}
