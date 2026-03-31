@@ -1125,7 +1125,8 @@ export async function registerRoutes(
       await storage.updateCrmImport(imp.id, { rowsImported: result.imported, rowsFailed: result.failed, status: "completed" });
       res.json({ success: true, imported: result.imported, failed: result.failed, importId: imp.id });
     } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+      console.error("[CRM Import error]", error);
+      res.status(500).json({ success: false, error: error?.message || String(error) || "Internal server error during import" });
     }
   });
 

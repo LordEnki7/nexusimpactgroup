@@ -2940,23 +2940,54 @@ function CRMPanel() {
     reader.readAsText(file);
   };
 
-  const handleCsvImport = async () => {
-    try {
-      // Parse CSV text
-      const lines = importText.trim().split("\n");
-      if (lines.length < 2) { setError("CSV needs at least a header row and one data row"); return; }
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-      const rows = lines.slice(1).map((line) => {
-        const vals = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+  const parseCSV = (text: string): Record<string, string>[] => {
+    const parseRow = (line: string): string[] => {
+      const fields: string[] = [];
+      let cur = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === "," && !inQuotes) {
+          fields.push(cur.trim());
+          cur = "";
+        } else {
+          cur += ch;
+        }
+      }
+      fields.push(cur.trim());
+      return fields;
+    };
+
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = parseRow(lines[0]);
+    return lines.slice(1)
+      .filter((l) => l.trim())
+      .map((line) => {
+        const vals = parseRow(line);
         const obj: Record<string, string> = {};
         headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
         return obj;
       });
-      const res = await fetch("/api/crm/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contacts: rows, filename: "paste_import.csv" }) });
+  };
+
+  const handleCsvImport = async () => {
+    try {
+      const rows = parseCSV(importText);
+      if (rows.length === 0) { setError("No valid rows found. Make sure your CSV has a header row and at least one data row."); return; }
+      const res = await fetch("/api/crm/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contacts: rows, filename: "csv_import.csv" }),
+      });
       const data = await res.json();
+      if (!data.success && !data.error) data.error = `Server error (status ${res.status})`;
       setImportResult(data);
       if (data.success) { fetchContacts(); fetchPipeline(); }
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) { setError(e?.message || "Import failed — please check your CSV format and try again."); }
   };
 
   return (
