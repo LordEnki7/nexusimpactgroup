@@ -66,7 +66,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type Division = {
   id: number;
@@ -2828,6 +2828,8 @@ function CRMPanel() {
   // CSV import
   const [importText, setImportText] = useState("");
   const [importResult, setImportResult] = useState<any>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchContacts(); fetchPipeline(); }, []);
   useEffect(() => { const t = setTimeout(() => fetchContacts(), 300); return () => clearTimeout(t); }, [search]);
@@ -2926,6 +2928,16 @@ function CRMPanel() {
       if (data.success) { setSelectedContact((c: any) => ({ ...c, aiSummary: data.summary })); }
     } catch {}
     setAiLoading(null);
+  };
+
+  const readFile = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImportText((ev.target?.result as string) || "");
+      setImportResult(null);
+    };
+    reader.readAsText(file);
   };
 
   const handleCsvImport = async () => {
@@ -3246,30 +3258,49 @@ function CRMPanel() {
               <button onClick={() => { setShowImport(false); setImportText(""); setImportResult(null); }} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
 
-            {/* File upload zone */}
-            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-yellow-500/40 rounded-xl bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer transition-colors mb-4 group">
-              <Upload className="w-8 h-8 text-yellow-400/60 group-hover:text-yellow-400 mb-2 transition-colors" />
-              <span className="text-sm text-yellow-400 font-medium">Click to upload CSV file</span>
-              <span className="text-xs text-gray-500 mt-1">or paste data below</span>
-              <input
-                type="file"
-                accept=".csv,.txt"
-                className="hidden"
-                data-testid="input-csv-file"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = (ev) => {
-                    const text = ev.target?.result as string;
-                    setImportText(text || "");
-                    setImportResult(null);
-                  };
-                  reader.readAsText(file);
-                  e.target.value = "";
-                }}
-              />
-            </label>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt"
+              className="hidden"
+              data-testid="input-csv-file"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { readFile(file); e.target.value = ""; }
+              }}
+            />
+
+            {/* Drop zone */}
+            <div
+              className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl transition-all mb-4 cursor-pointer select-none ${
+                isDragging
+                  ? "border-yellow-400 bg-yellow-400/20 scale-[1.01]"
+                  : "border-yellow-500/40 bg-yellow-500/5 hover:border-yellow-400/70 hover:bg-yellow-500/10"
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragging(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) readFile(file);
+              }}
+            >
+              <Upload className={`w-8 h-8 mb-2 transition-colors ${isDragging ? "text-yellow-400" : "text-yellow-400/50"}`} />
+              <p className="text-sm font-semibold text-yellow-400">{isDragging ? "Drop it!" : "Drag & drop your CSV here"}</p>
+              <p className="text-xs text-gray-500 mt-1">or</p>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                className="mt-2 px-4 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold rounded-lg transition-colors"
+              >
+                Choose File
+              </button>
+            </div>
 
             <p className="text-xs text-gray-500 mb-2">
               Recognized columns: <span className="text-yellow-400">First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL</span>
