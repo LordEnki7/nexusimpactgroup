@@ -3245,17 +3245,66 @@ function CRMPanel() {
               <h3 className="text-lg font-bold text-white">Import Contacts</h3>
               <button onClick={() => { setShowImport(false); setImportText(""); setImportResult(null); }} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-gray-400 mb-3">Paste CSV data below. First row must be headers. Recognized columns: <span className="text-yellow-400">First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL</span> (LinkedIn export format works directly).</p>
-            <textarea value={importText} onChange={(e) => setImportText(e.target.value)} rows={8} placeholder="First Name,Last Name,Email Address,Company,Job Title&#10;John,Doe,john@example.com,Acme Inc,CEO"
-              className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-xs text-gray-300 font-mono focus:outline-none focus:border-yellow-500/50 resize-none" data-testid="textarea-csv-import" />
+
+            {/* File upload zone */}
+            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-yellow-500/40 rounded-xl bg-yellow-500/5 hover:bg-yellow-500/10 cursor-pointer transition-colors mb-4 group">
+              <Upload className="w-8 h-8 text-yellow-400/60 group-hover:text-yellow-400 mb-2 transition-colors" />
+              <span className="text-sm text-yellow-400 font-medium">Click to upload CSV file</span>
+              <span className="text-xs text-gray-500 mt-1">or paste data below</span>
+              <input
+                type="file"
+                accept=".csv,.txt"
+                className="hidden"
+                data-testid="input-csv-file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const text = ev.target?.result as string;
+                    setImportText(text || "");
+                    setImportResult(null);
+                  };
+                  reader.readAsText(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+
+            <p className="text-xs text-gray-500 mb-2">
+              Recognized columns: <span className="text-yellow-400">First Name, Last Name, Email Address, Company, Job Title, LinkedIn URL</span>
+              <br />LinkedIn export format works directly. First row must be headers.
+            </p>
+
+            {/* Preview row count */}
+            {importText.trim() && (
+              <p className="text-xs text-emerald-400 mb-2">
+                ✓ {Math.max(0, importText.trim().split("\n").length - 1)} rows detected — ready to import
+              </p>
+            )}
+
+            <textarea
+              value={importText}
+              onChange={(e) => { setImportText(e.target.value); setImportResult(null); }}
+              rows={5}
+              placeholder={"First Name,Last Name,Email Address,Company,Job Title\nJohn,Doe,john@example.com,Acme Inc,CEO"}
+              className="w-full px-3 py-2 rounded-lg bg-[#0B1B3F] border border-white/10 text-xs text-gray-300 font-mono focus:outline-none focus:border-yellow-500/50 resize-y"
+              data-testid="textarea-csv-import"
+            />
+
             {importResult && (
               <div className={`mt-3 px-4 py-2 rounded-lg border text-sm ${importResult.success ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-red-500/30 bg-red-500/10 text-red-400"}`}>
-                {importResult.success ? `✓ Imported ${importResult.imported} contacts (${importResult.failed} failed)` : `Error: ${importResult.error}`}
+                {importResult.success
+                  ? `✓ Imported ${importResult.imported} contacts${importResult.failed > 0 ? ` (${importResult.failed} skipped)` : ""}`
+                  : `Error: ${importResult.error}`}
               </div>
             )}
+
             <div className="flex gap-3 mt-4">
               <button onClick={() => { setShowImport(false); setImportText(""); setImportResult(null); }} className="flex-1 py-2 border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5">Close</button>
-              <button onClick={handleCsvImport} disabled={!importText.trim()} className="flex-1 py-2 bg-yellow-500 rounded-lg text-black text-sm font-bold hover:bg-yellow-400 disabled:opacity-50" data-testid="button-import-csv">Import</button>
+              <button onClick={handleCsvImport} disabled={!importText.trim()} className="flex-1 py-2 bg-yellow-500 rounded-lg text-black text-sm font-bold hover:bg-yellow-400 disabled:opacity-50" data-testid="button-import-csv">
+                Import {importText.trim() ? `(${Math.max(0, importText.trim().split("\n").length - 1)} rows)` : ""}
+              </button>
             </div>
           </div>
         </div>
