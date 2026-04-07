@@ -17,56 +17,13 @@ const NIG_APPS = [
   "NIG Core Command Center",
 ];
 
-const SECURITY_AGENT_PROMPT = `
-ROLE: NIG Security Integrity Agent
+const SECURITY_AGENT_PROMPT = `You are the NIG Security Integrity Agent — a defensive monitoring AI protecting 12 NIG apps. Detect threats, anomalies, and integrity issues. Never recommend offensive actions or unauthorized access.
 
-MISSION
-You are the Security Integrity Agent for the NIG technology ecosystem. You protect application integrity, detect suspicious activity, reduce security risk, monitor system health, and support safe incident response across all 12 NIG divisions and the Command Center.
+Risk levels: INFO | LOW | MEDIUM | HIGH | CRITICAL
 
-You operate as a DEFENSIVE security and integrity monitoring agent. You detect, document, and guide response to threats — you do not take autonomous destructive or offensive actions.
+Categories: failed_login, privilege_escalation, api_abuse, account_spike, bot_activity, payment_manipulation, config_change, audit_tampering, cross_app_anomaly, token_misuse, integrity_failure
 
-NIG ECOSYSTEM APPS UNDER PROTECTION:
-${NIG_APPS.map((a) => `• ${a}`).join("\n")}
-
-RISK LEVELS: INFO | LOW | MEDIUM | HIGH | CRITICAL
-
-THREAT CATEGORIES TO WATCH:
-• repeated failed login attempts
-• unusual admin access or privilege elevation
-• abnormal API request volume or endpoint abuse
-• suspicious account creation spikes
-• bot-like behavior or scraping patterns
-• suspicious payment/refund manipulation
-• deployment or config changes outside expected process
-• missing or altered audit logs
-• unusual cross-application activity
-• token misuse indicators
-• integrity failures in records or workflows
-
-RESPONSE RULES:
-You MAY recommend: account flagging, session review, increased monitoring, evidence preservation, config review, owner notification
-You MUST NOT recommend: offensive countermeasures, data destruction, permanent blocking without approval, unauthorized access
-
-For every finding, output a structured Security Incident Report in valid JSON.
-
-OUTPUT FORMAT:
-{
-  "scanTitle": "string",
-  "affectedApp": "string",
-  "riskLevel": "INFO|LOW|MEDIUM|HIGH|CRITICAL",
-  "category": "string",
-  "confidence": 0-100,
-  "summary": "string",
-  "signals": ["string"],
-  "impact": "string",
-  "recommendation": "string",
-  "escalationRequired": boolean,
-  "ownerReviewNeeded": boolean,
-  "qualityScore": 1-10
-}
-
-Always respond with a JSON array of findings even if there is only one, or an empty array [] if nothing is found.
-`;
+Return valid JSON with a "findings" array. Each finding: { scanTitle, affectedApp, riskLevel, category, confidence (0-100), summary, signals (array), impact, recommendation, escalationRequired (bool), ownerReviewNeeded (bool), qualityScore (1-10) }. Return {"findings":[]} if clean.`;
 
 export interface SecurityScanResult {
   findings: any[];
@@ -98,31 +55,30 @@ function getStatus(highest: string): SecurityScanResult["status"] {
 export async function runSecurityScan(context?: string): Promise<SecurityScanResult> {
   const start = Date.now();
 
-  // Pull recent agent logs, incidents, and division uptime context
-  const recentLogs = await storage.getAgentLogs(20);
+  // Pull recent agent logs, incidents, and division uptime context — keep it lean
+  const recentLogs = await storage.getAgentLogs(8);
   const recentIncidents = await storage.getIncidents();
   const recentFindings = await (storage as any).getSecurityFindings?.() ?? [];
 
-  const contextBlock = `
-CURRENT PLATFORM SIGNALS:
-Recent Agent Activity (last 20 logs):
-${recentLogs.map((l) => `[${l.status}] ${l.agentName}: ${l.action} — ${l.details}`).join("\n")}
+  const openIncidents = recentIncidents.filter((i: any) => i.status === "open").length;
+  const openFindings = recentFindings.filter((f: any) => f.status === "open").length;
 
-Open Incidents: ${recentIncidents.filter((i: any) => i.status === "open").length}
-Existing Open Security Findings: ${recentFindings.filter((f: any) => f.status === "open").length}
+  const contextBlock = `PLATFORM SIGNALS (last 8 agent actions):
+${recentLogs.map((l: any) => `[${l.status}] ${l.agentName}: ${l.action}`).join("\n")}
 
-${context ? `ADDITIONAL CONTEXT FROM OPERATOR:\n${context}` : ""}
+Open Incidents: ${openIncidents} | Open Security Findings: ${openFindings}
+${context ? `\nOPERATOR FOCUS: ${context}` : ""}
 
-TASK: Run a full security integrity scan across all NIG apps. Review the above signals, identify any suspicious patterns, integrity issues, or anomalies. Generate findings for anything that warrants attention. Return [] if everything looks clean.
-`;
+TASK: Scan all NIG apps for threats or anomalies. Return JSON with a "findings" array (each item: scanTitle, affectedApp, riskLevel, category, confidence, summary, signals, impact, recommendation, escalationRequired, ownerReviewNeeded). Return {"findings":[]} if clean.`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     messages: [
       { role: "system", content: SECURITY_AGENT_PROMPT },
       { role: "user", content: contextBlock },
     ],
     response_format: { type: "json_object" },
+    max_tokens: 1500,
     temperature: 0.3,
   });
 
@@ -206,14 +162,15 @@ export async function askSecurityAgent(question: string): Promise<string> {
   const openFindings = recentFindings.filter((f: any) => f.status === "open").slice(0, 10);
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     messages: [
       { role: "system", content: SECURITY_AGENT_PROMPT },
       {
         role: "user",
-        content: `CURRENT OPEN FINDINGS (${openFindings.length}):\n${openFindings.map((f: any) => `[${f.riskLevel}] ${f.title}: ${f.summary}`).join("\n")}\n\nOPERATOR QUESTION: ${question}\n\nProvide a clear, actionable security answer. Do not use JSON format for this response.`,
+        content: `OPEN FINDINGS (${openFindings.length}):\n${openFindings.map((f: any) => `[${f.riskLevel}] ${f.title}: ${f.summary}`).join("\n")}\n\nQUESTION: ${question}\n\nAnswer clearly and actionably. Plain text, no JSON.`,
       },
     ],
+    max_tokens: 800,
     temperature: 0.4,
   });
 
