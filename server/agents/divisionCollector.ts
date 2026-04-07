@@ -3,6 +3,65 @@ import { storage } from "../storage";
 const NIG_API_KEY = process.env.NIG_API_KEY || "";
 const COLLECTION_TIMEOUT_MS = 10000;
 
+export interface HealthCheckResult {
+  name: string;
+  domain: string;
+  reachable: boolean;
+  hasHealthEndpoint: boolean;
+  httpStatus: number | null;
+  responseMs: number;
+  data: Record<string, any> | null;
+  checkedAt: string;
+}
+
+export async function checkDivisionHealth(): Promise<HealthCheckResult[]> {
+  const results = await Promise.all(
+    DIVISION_ENDPOINTS.map(async (ep): Promise<HealthCheckResult> => {
+      const checkedAt = new Date().toISOString();
+      const start = Date.now();
+
+      // Try /api/health first, then /health
+      for (const path of ["/api/health", "/health"]) {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 8000);
+          const res = await fetch(`https://${ep.domain}${path}`, {
+            method: "GET",
+            signal: controller.signal,
+            headers: { "x-nig-key": NIG_API_KEY || "nig-monitor" },
+          });
+          clearTimeout(tid);
+          const responseMs = Date.now() - start;
+
+          if (res.ok) {
+            let data: Record<string, any> | null = null;
+            const ct = res.headers.get("content-type") || "";
+            if (ct.includes("json")) {
+              try { data = await res.json(); } catch {}
+            }
+            return { name: ep.name, domain: ep.domain, reachable: true, hasHealthEndpoint: true, httpStatus: res.status, responseMs, data, checkedAt };
+          }
+          // Non-ok but reachable
+          return { name: ep.name, domain: ep.domain, reachable: true, hasHealthEndpoint: false, httpStatus: res.status, responseMs, data: null, checkedAt };
+        } catch {}
+      }
+
+      // Fall back to basic ping
+      const pingStart = Date.now();
+      try {
+        const c = new AbortController();
+        const t = setTimeout(() => c.abort(), 8000);
+        const r = await fetch(`https://${ep.domain}`, { method: "HEAD", signal: c.signal });
+        clearTimeout(t);
+        return { name: ep.name, domain: ep.domain, reachable: r.ok || r.status < 500, hasHealthEndpoint: false, httpStatus: r.status, responseMs: Date.now() - pingStart, data: null, checkedAt };
+      } catch {
+        return { name: ep.name, domain: ep.domain, reachable: false, hasHealthEndpoint: false, httpStatus: null, responseMs: Date.now() - pingStart, data: null, checkedAt };
+      }
+    })
+  );
+  return results;
+}
+
 export interface PingResult {
   name: string;
   domain: string;

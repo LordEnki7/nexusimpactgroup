@@ -3466,7 +3466,7 @@ function SecurityPanel() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [askingQuestion, setAskingQuestion] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<"overview" | "findings" | "events" | "ask">("overview");
+  const [activeSubTab, setActiveSubTab] = useState<"overview" | "findings" | "events" | "ask" | "connect">("overview");
   const [filterStatus, setFilterStatus] = useState("all");
   const [markingId, setMarkingId] = useState<number | null>(null);
   const [scanContext, setScanContext] = useState("");
@@ -3545,11 +3545,42 @@ function SecurityPanel() {
 
   const systemStatus = criticalCount > 0 ? "escalated" : highCount > 0 ? "action_required" : openFindings.length > 0 ? "monitoring" : "clear";
 
+  const [webhookInfo, setWebhookInfo] = useState<any>(null);
+  const [healthResults, setHealthResults] = useState<any[]>([]);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const loadWebhookInfo = async () => {
+    const res = await apiFetch("/api/webhook/info");
+    const data = await res.json().catch(() => ({}));
+    if (data.webhookUrl) setWebhookInfo(data);
+  };
+
+  const runHealthCheck = async () => {
+    setCheckingHealth(true);
+    const res = await apiFetch("/api/divisions/health");
+    const data = await res.json().catch(() => ({}));
+    if (data.results) setHealthResults(data.results);
+    setCheckingHealth(false);
+  };
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  useEffect(() => {
+    if (activeSubTab === "connect" && !webhookInfo) loadWebhookInfo();
+    if (activeSubTab === "connect" && healthResults.length === 0) runHealthCheck();
+  }, [activeSubTab]);
+
   const subTabs = [
     { id: "overview", label: "Overview" },
     { id: "findings", label: `Findings (${openFindings.length})` },
     { id: "events", label: `Events (${events.length})` },
     { id: "ask", label: "Ask Agent" },
+    { id: "connect", label: "Connect Apps" },
   ] as const;
 
   return (
@@ -3885,6 +3916,275 @@ function SecurityPanel() {
               <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">{answer}</p>
             </motion.div>
           )}
+        </div>
+      )}
+
+      {/* Connect Apps */}
+      {activeSubTab === "connect" && (
+        <div className="space-y-6">
+
+          {/* Health Check Panel */}
+          <div className="p-5 rounded-xl border border-white/10 bg-[#0B1B3F]/20">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold text-white">Health Check — All Apps</p>
+                <p className="text-xs text-gray-400 mt-0.5">Checks for a <code className="text-emerald-300">/health</code> or <code className="text-emerald-300">/api/health</code> endpoint on each app</p>
+              </div>
+              <button
+                onClick={runHealthCheck}
+                disabled={checkingHealth}
+                className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs hover:bg-emerald-500/20 disabled:opacity-50"
+                data-testid="button-health-check"
+              >
+                {checkingHealth ? <><RefreshCw className="w-3 h-3 animate-spin" /> Checking…</> : <><Activity className="w-3 h-3" /> Check Now</>}
+              </button>
+            </div>
+
+            {healthResults.length > 0 ? (
+              <div className="space-y-2">
+                {healthResults.map((r: any) => (
+                  <div key={r.domain} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5" data-testid={`health-row-${r.domain}`}>
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${r.reachable ? "bg-emerald-400" : "bg-red-400"}`}></span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-white truncate">{r.name}</span>
+                        {r.hasHealthEndpoint && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 flex-shrink-0">Has /health</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-500">{r.domain}</span>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-xs font-mono ${r.reachable ? "text-emerald-400" : "text-red-400"}`}>
+                        {r.reachable ? `${r.responseMs}ms` : "offline"}
+                      </p>
+                      {r.httpStatus && <p className="text-[10px] text-gray-600">HTTP {r.httpStatus}</p>}
+                    </div>
+                    {r.data && (
+                      <div className="text-[10px] text-gray-400 max-w-32 truncate">
+                        {Object.entries(r.data).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : checkingHealth ? (
+              <div className="flex items-center justify-center py-8 gap-3 text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Checking all apps…</span>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-4">Click "Check Now" to poll all apps</p>
+            )}
+
+            <div className="mt-4 p-3 rounded-lg bg-black/20 border border-white/5">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Add this to any NIG app to enable health reporting</p>
+              <pre className="text-[11px] text-emerald-300 font-mono overflow-x-auto whitespace-pre-wrap">{`// Node / Express
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    app: 'Your App Name',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});`}</pre>
+            </div>
+          </div>
+
+          {/* Webhook Receiver */}
+          <div className="p-5 rounded-xl border border-[#DAA520]/20 bg-[#DAA520]/5 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">Webhook Receiver</p>
+                <p className="text-xs text-gray-400 mt-0.5">Your apps send events here — they appear in the Events tab instantly</p>
+              </div>
+              {webhookInfo?.usingDefault && (
+                <span className="text-[10px] px-2 py-1 rounded-full bg-yellow-500/10 border border-yellow-400/30 text-yellow-300">
+                  Set WEBHOOK_SECRET in env for a permanent token
+                </span>
+              )}
+            </div>
+
+            {webhookInfo ? (
+              <>
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Webhook URL</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs font-mono text-[#14C1D7] bg-black/30 px-3 py-2 rounded-lg border border-white/10 overflow-x-auto whitespace-nowrap">
+                      {webhookInfo.webhookUrl}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(webhookInfo.webhookUrl, "url")}
+                      className="px-3 py-2 text-xs rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex-shrink-0"
+                      data-testid="button-copy-webhook-url"
+                    >
+                      {copied === "url" ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Secret Key (x-nig-key header)</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs font-mono text-[#DAA520] bg-black/30 px-3 py-2 rounded-lg border border-white/10 overflow-x-auto whitespace-nowrap">
+                      {webhookInfo.token}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(webhookInfo.token, "token")}
+                      className="px-3 py-2 text-xs rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 flex-shrink-0"
+                      data-testid="button-copy-token"
+                    >
+                      {copied === "token" ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Code snippets */}
+                <div className="space-y-3">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Paste into your app — pick your language</p>
+
+                  {/* Node.js */}
+                  <div className="rounded-lg overflow-hidden border border-white/10">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/10">
+                      <span className="text-[10px] text-gray-400 font-mono">Node.js / Express</span>
+                      <button onClick={() => copyToClipboard(
+`// At the top of your app (once)
+const NIG_WEBHOOK = '${webhookInfo.webhookUrl}';
+const NIG_KEY = '${webhookInfo.token}';
+
+async function reportToNIG(eventType, details, severity = 'INFO') {
+  try {
+    await fetch(NIG_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-nig-key': NIG_KEY },
+      body: JSON.stringify({ app: 'Your App Name', eventType, details, severity }),
+    });
+  } catch {}  // never block your app for this
+}
+
+// Example usage:
+// reportToNIG('failed_login', 'User john@example.com failed 3 times', 'MEDIUM');
+// reportToNIG('payment_error', 'Stripe webhook failed for order #123', 'HIGH');`, "node"
+                      )} className="text-[10px] text-gray-400 hover:text-white">{copied === "node" ? "Copied!" : "Copy"}</button>
+                    </div>
+                    <pre className="text-[11px] font-mono text-gray-300 p-3 overflow-x-auto whitespace-pre bg-black/20">{`const NIG_WEBHOOK = '${webhookInfo.webhookUrl}';
+const NIG_KEY = '${webhookInfo.token}';
+
+async function reportToNIG(eventType, details, severity = 'INFO') {
+  try {
+    await fetch(NIG_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-nig-key': NIG_KEY },
+      body: JSON.stringify({ app: 'Your App Name', eventType, details, severity }),
+    });
+  } catch {}
+}
+
+// reportToNIG('failed_login', 'User failed 3 times', 'MEDIUM');`}</pre>
+                  </div>
+
+                  {/* Python */}
+                  <div className="rounded-lg overflow-hidden border border-white/10">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/10">
+                      <span className="text-[10px] text-gray-400 font-mono">Python</span>
+                      <button onClick={() => copyToClipboard(
+`import requests
+
+NIG_WEBHOOK = '${webhookInfo.webhookUrl}'
+NIG_KEY = '${webhookInfo.token}'
+
+def report_to_nig(event_type, details, severity='INFO', app='Your App Name'):
+    try:
+        requests.post(NIG_WEBHOOK, json={
+            'app': app, 'eventType': event_type,
+            'details': details, 'severity': severity
+        }, headers={'x-nig-key': NIG_KEY}, timeout=5)
+    except Exception:
+        pass  # never block your app for this
+
+# report_to_nig('failed_login', 'User failed 3 times', 'MEDIUM')`, "python"
+                      )} className="text-[10px] text-gray-400 hover:text-white">{copied === "python" ? "Copied!" : "Copy"}</button>
+                    </div>
+                    <pre className="text-[11px] font-mono text-gray-300 p-3 overflow-x-auto whitespace-pre bg-black/20">{`import requests
+
+NIG_WEBHOOK = '${webhookInfo.webhookUrl}'
+NIG_KEY = '${webhookInfo.token}'
+
+def report_to_nig(event_type, details, severity='INFO'):
+    try:
+        requests.post(NIG_WEBHOOK, json={
+            'app': 'Your App Name', 'eventType': event_type,
+            'details': details, 'severity': severity
+        }, headers={'x-nig-key': NIG_KEY}, timeout=5)
+    except Exception:
+        pass`}</pre>
+                  </div>
+
+                  {/* PHP */}
+                  <div className="rounded-lg overflow-hidden border border-white/10">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/10">
+                      <span className="text-[10px] text-gray-400 font-mono">PHP</span>
+                      <button onClick={() => copyToClipboard(
+`<?php
+function reportToNIG($eventType, $details, $severity = 'INFO', $app = 'Your App Name') {
+    $ch = curl_init('${webhookInfo.webhookUrl}');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-nig-key: ${webhookInfo.token}'],
+        CURLOPT_POSTFIELDS => json_encode(['app' => $app, 'eventType' => $eventType, 'details' => $details, 'severity' => $severity]),
+    ]);
+    @curl_exec($ch); // suppress errors — never block your app
+    curl_close($ch);
+}
+// reportToNIG('failed_login', 'User failed 3 times', 'MEDIUM');`, "php"
+                      )} className="text-[10px] text-gray-400 hover:text-white">{copied === "php" ? "Copied!" : "Copy"}</button>
+                    </div>
+                    <pre className="text-[11px] font-mono text-gray-300 p-3 overflow-x-auto whitespace-pre bg-black/20">{`<?php
+function reportToNIG($eventType, $details, $severity = 'INFO') {
+    $ch = curl_init('${webhookInfo.webhookUrl}');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+            'x-nig-key: ${webhookInfo.token}'
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'app' => 'Your App Name',
+            'eventType' => $eventType,
+            'details' => $details,
+            'severity' => $severity
+        ]),
+    ]);
+    @curl_exec($ch);
+    curl_close($ch);
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* Severity guide */}
+                <div className="p-3 rounded-lg bg-black/20 border border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Severity Levels</p>
+                  <div className="grid grid-cols-5 gap-1">
+                    {[["INFO","gray","Routine info, no action needed"],["LOW","blue","Minor issues, log for awareness"],["MEDIUM","yellow","Needs attention soon"],["HIGH","orange","Urgent — logged to agent audit"],["CRITICAL","red","Emergency — immediate escalation"]].map(([level, color, desc]) => (
+                      <div key={level} className="text-center">
+                        <span className={`text-[10px] font-bold text-${color}-400 block`}>{level}</span>
+                        <span className="text-[9px] text-gray-600 leading-tight">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center py-6 gap-2 text-gray-500">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Loading webhook info…</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </motion.div>

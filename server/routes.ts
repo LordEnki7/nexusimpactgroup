@@ -22,7 +22,7 @@ import { runAllCTODivisionAgents, runDevOpsAnalysis, runSecurityAnalysis, runArc
 import { generateDailyBrief, createProposal, executeApprovedTask, askOrchestrator, analyzeCrossBusiness, getEcosystemOverview } from "./agents/orchestratorAgent";
 import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOptimizer } from "./agents/specialistAgents";
 import { scheduler } from "./agents/scheduler";
-import { collectDivisionData, pingAllDivisions } from "./agents/divisionCollector";
+import { collectDivisionData, pingAllDivisions, checkDivisionHealth } from "./agents/divisionCollector";
 import { runSecurityScan, logSecurityEvent, askSecurityAgent } from "./agents/securityAgent";
 import { registerCommandCenterAuth, requireCommandCenterAuth } from "./commandCenterAuth";
 import { generateOutreachDraft, generateCrossDivisionRecommendations, summarizeContact, getCrmPipelineSummary } from "./agents/crmAgent";
@@ -1058,6 +1058,76 @@ export async function registerRoutes(
       const live = results.filter((r) => r.status === "live").length;
       const offline = results.filter((r) => r.status === "offline").length;
       res.json({ success: true, results, summary: { total: results.length, live, offline, degraded: results.length - live - offline } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // ── WEBHOOK RECEIVER ─────────────────────────────────────────────────────────
+  // Public endpoint — any NIG app can POST events here using x-nig-key header
+
+  const getWebhookToken = () => process.env.WEBHOOK_SECRET || "nig-webhook-default-change-me";
+
+  app.get("/api/webhook/info", isAdmin, (_req, res) => {
+    const token = getWebhookToken();
+    const baseUrl = process.env.APP_URL || `https://${process.env.REPL_SLUG || "your-nig-domain"}.replit.app`;
+    res.json({
+      webhookUrl: `${baseUrl}/api/webhook/event`,
+      token,
+      tokenEnvVar: "WEBHOOK_SECRET",
+      usingDefault: !process.env.WEBHOOK_SECRET,
+    });
+  });
+
+  app.post("/api/webhook/event", async (req, res) => {
+    const token = getWebhookToken();
+    const provided = req.headers["x-nig-key"];
+    if (!provided || provided !== token) {
+      return res.status(401).json({ error: "Unauthorized — missing or invalid x-nig-key header" });
+    }
+
+    const { app: appName, eventType, severity = "INFO", details, source, metadata } = req.body || {};
+    if (!appName || !eventType || !details) {
+      return res.status(400).json({ error: "Required fields: app, eventType, details" });
+    }
+
+    const validSeverities = ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"];
+    const safeSeverity = validSeverities.includes(severity?.toUpperCase()) ? severity.toUpperCase() : "INFO";
+
+    try {
+      const event = await storage.createSecurityEvent({
+        appName,
+        eventType,
+        severity: safeSeverity,
+        source: source || appName,
+        details,
+        metadata: metadata ? JSON.stringify(metadata) : undefined,
+        reviewed: false,
+      });
+
+      // Auto-log HIGH/CRITICAL to agent logs
+      if (safeSeverity === "HIGH" || safeSeverity === "CRITICAL") {
+        await storage.createAgentLog({
+          agentType: "security",
+          agentName: "NIG Security Integrity Agent",
+          action: `Webhook Alert — ${safeSeverity}`,
+          details: `[${appName}] ${eventType}: ${details}`,
+          status: "warning",
+        });
+      }
+
+      res.json({ success: true, eventId: event.id });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ── DIVISION HEALTH CHECK ─────────────────────────────────────────────────────
+
+  app.get("/api/divisions/health", isAdmin, async (_req, res) => {
+    try {
+      const results = await checkDivisionHealth();
+      res.json({ success: true, results, checkedAt: new Date().toISOString() });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
     }
