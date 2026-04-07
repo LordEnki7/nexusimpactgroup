@@ -384,6 +384,64 @@ export type CrmActivity = typeof crmActivities.$inferSelect;
 export type InsertCrmActivity = z.infer<typeof insertCrmActivitySchema>;
 export type CrmImport = typeof crmImports.$inferSelect;
 
+// ============================================
+// NIG SECURITY INTEGRITY AGENT SCHEMA
+// ============================================
+
+export const securityEvents = pgTable("security_events", {
+  id: serial("id").primaryKey(),
+  appName: text("app_name").notNull().default("NIG Platform"),
+  eventType: text("event_type").notNull(), // failed_login, permission_change, api_abuse, etc.
+  severity: text("severity").notNull().default("INFO"), // INFO, LOW, MEDIUM, HIGH, CRITICAL
+  source: text("source"), // ip, userId, route, etc.
+  details: text("details").notNull(),
+  metadata: text("metadata"), // JSON string of extra context
+  reviewed: boolean("reviewed").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const securityFindings = pgTable("security_findings", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  affectedApp: text("affected_app").notNull().default("NIG Platform"),
+  riskLevel: text("risk_level").notNull(), // INFO, LOW, MEDIUM, HIGH, CRITICAL
+  category: text("category").notNull(),
+  confidence: integer("confidence").default(75), // 0-100
+  summary: text("summary").notNull(),
+  signals: text("signals"), // JSON array of signals observed
+  impact: text("impact"),
+  recommendation: text("recommendation"),
+  escalationRequired: boolean("escalation_required").default(false),
+  ownerReviewNeeded: boolean("owner_review_needed").default(false),
+  status: text("status").default("open"), // open, reviewed, resolved, false_positive
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const securityIncidents = pgTable("security_incidents", {
+  id: serial("id").primaryKey(),
+  findingId: integer("finding_id"),
+  title: text("title").notNull(),
+  affectedApp: text("affected_app").notNull(),
+  riskLevel: text("risk_level").notNull(),
+  status: text("status").default("open"), // open, investigating, contained, resolved
+  summary: text("summary").notNull(),
+  actionsTaken: text("actions_taken"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSecurityEventSchema = createInsertSchema(securityEvents).omit({ id: true, createdAt: true });
+export const insertSecurityFindingSchema = createInsertSchema(securityFindings).omit({ id: true, createdAt: true, resolvedAt: true });
+export const insertSecurityIncidentSchema = createInsertSchema(securityIncidents).omit({ id: true, createdAt: true, resolvedAt: true });
+
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type InsertSecurityEvent = z.infer<typeof insertSecurityEventSchema>;
+export type SecurityFinding = typeof securityFindings.$inferSelect;
+export type InsertSecurityFinding = z.infer<typeof insertSecurityFindingSchema>;
+export type SecurityIncident = typeof securityIncidents.$inferSelect;
+export type InsertSecurityIncident = z.infer<typeof insertSecurityIncidentSchema>;
+
 // Auth schema (mandatory for Replit Auth)
 export * from "./models/auth";
 

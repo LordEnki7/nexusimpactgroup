@@ -147,6 +147,7 @@ export default function CommandCenter() {
     { id: "specialists", label: "Specialists", icon: Cpu, color: "from-teal-500 to-emerald-500" },
     { id: "agents", label: "Exec Agents", icon: Bot, color: "from-[#DAA520] to-[#14C1D7]" },
     { id: "crm", label: "CRM", icon: Contact, color: "from-rose-500 to-pink-500" },
+    { id: "security", label: "Security", icon: Shield, color: "from-emerald-500 to-teal-500" },
     { id: "reports", label: "Reports", icon: FileText, color: "from-blue-500 to-indigo-500" },
     { id: "memory", label: "Memory", icon: Database, color: "from-purple-500 to-pink-500" },
   ];
@@ -258,6 +259,7 @@ export default function CommandCenter() {
               {activePanel === "approvals" && <ApprovalsPanel />}
               {activePanel === "specialists" && <SpecialistsPanel />}
               {activePanel === "crm" && <CRMPanel />}
+              {activePanel === "security" && <SecurityPanel />}
               {activePanel === "reports" && <ReportsPanel />}
               {activePanel === "memory" && <MemoryPanel />}
 
@@ -3433,6 +3435,456 @@ function CRMPanel() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NIG SECURITY INTEGRITY AGENT PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+const RISK_COLORS: Record<string, string> = {
+  CRITICAL: "text-red-400 bg-red-400/10 border-red-400/40",
+  HIGH:     "text-orange-400 bg-orange-400/10 border-orange-400/40",
+  MEDIUM:   "text-yellow-400 bg-yellow-400/10 border-yellow-400/40",
+  LOW:      "text-blue-400 bg-blue-400/10 border-blue-400/40",
+  INFO:     "text-gray-400 bg-gray-400/10 border-gray-400/30",
+};
+const STATUS_COLORS: Record<string, string> = {
+  clear:          "text-emerald-400",
+  monitoring:     "text-blue-400",
+  action_required:"text-yellow-400",
+  escalated:      "text-red-400",
+};
+
+function SecurityPanel() {
+  const [findings, setFindings] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [scanResult, setScanResult] = useState<any | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [askingQuestion, setAskingQuestion] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<"overview" | "findings" | "events" | "ask">("overview");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [markingId, setMarkingId] = useState<number | null>(null);
+  const [scanContext, setScanContext] = useState("");
+  const [showContextInput, setShowContextInput] = useState(false);
+
+  const loadData = async () => {
+    const [fRes, eRes] = await Promise.all([
+      apiFetch("/api/security/findings"),
+      apiFetch("/api/security/events"),
+    ]);
+    const fData = await fRes.json().catch(() => ({}));
+    const eData = await eRes.json().catch(() => ({}));
+    if (fData.findings) setFindings(fData.findings);
+    if (eData.events) setEvents(eData.events);
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const runScan = async () => {
+    setScanning(true);
+    setScanResult(null);
+    try {
+      const res = await apiFetch("/api/security/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ context: scanContext || undefined }),
+      });
+      const data = await res.json();
+      setScanResult(data);
+      setShowContextInput(false);
+      setScanContext("");
+      await loadData();
+    } catch {
+      setScanResult({ error: "Scan failed. Please try again." });
+    }
+    setScanning(false);
+  };
+
+  const askQuestion = async () => {
+    if (!question.trim()) return;
+    setAskingQuestion(true);
+    setAnswer("");
+    try {
+      const res = await apiFetch("/api/security/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+      setAnswer(data.answer || "No answer generated.");
+    } catch {
+      setAnswer("Error contacting Security Agent.");
+    }
+    setAskingQuestion(false);
+  };
+
+  const markFinding = async (id: number, status: string) => {
+    setMarkingId(id);
+    try {
+      await apiFetch(`/api/security/findings/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      await loadData();
+    } finally {
+      setMarkingId(null);
+    }
+  };
+
+  const openFindings = findings.filter(f => f.status === "open");
+  const reviewedFindings = findings.filter(f => f.status !== "open");
+  const criticalCount = findings.filter(f => f.riskLevel === "CRITICAL" && f.status === "open").length;
+  const highCount = findings.filter(f => f.riskLevel === "HIGH" && f.status === "open").length;
+  const filteredFindings = filterStatus === "all" ? findings : findings.filter(f => f.status === filterStatus);
+
+  const systemStatus = criticalCount > 0 ? "escalated" : highCount > 0 ? "action_required" : openFindings.length > 0 ? "monitoring" : "clear";
+
+  const subTabs = [
+    { id: "overview", label: "Overview" },
+    { id: "findings", label: `Findings (${openFindings.length})` },
+    { id: "events", label: `Events (${events.length})` },
+    { id: "ask", label: "Ask Agent" },
+  ] as const;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <Shield className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">NIG Security Integrity Agent</h2>
+            <p className="text-xs text-gray-400">Continuous monitoring across all 12 NIG applications</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
+            systemStatus === "clear" ? "text-emerald-400 border-emerald-400/40 bg-emerald-400/10" :
+            systemStatus === "monitoring" ? "text-blue-400 border-blue-400/40 bg-blue-400/10" :
+            systemStatus === "action_required" ? "text-yellow-400 border-yellow-400/40 bg-yellow-400/10" :
+            "text-red-400 border-red-400/40 bg-red-400/10"
+          }`}>
+            {systemStatus.replace(/_/g, " ")}
+          </span>
+          <button
+            onClick={() => setShowContextInput(!showContextInput)}
+            className="px-3 py-1.5 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs hover:bg-emerald-500/10"
+            data-testid="button-security-context-toggle"
+          >
+            Add Context
+          </button>
+          <button
+            onClick={runScan}
+            disabled={scanning}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-lg text-black font-bold text-sm hover:bg-emerald-400 disabled:opacity-50 transition-all"
+            data-testid="button-security-scan"
+          >
+            {scanning ? <><RefreshCw className="w-4 h-4 animate-spin" /> Scanning…</> : <><Shield className="w-4 h-4" /> Run Scan</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Optional context input */}
+      {showContextInput && (
+        <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+          <p className="text-xs text-gray-400 mb-2">Provide context for the scan (e.g., "Focus on failed logins", "Check CRM data integrity")</p>
+          <textarea
+            value={scanContext}
+            onChange={e => setScanContext(e.target.value)}
+            placeholder="Optional scan context…"
+            className="w-full bg-[#0B1B3F]/60 border border-white/10 rounded-lg p-3 text-white text-sm resize-none outline-none focus:border-emerald-500/60"
+            rows={2}
+            data-testid="input-security-context"
+          />
+        </div>
+      )}
+
+      {/* Scan result banner */}
+      {scanResult && !scanning && (
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+          className={`p-4 rounded-xl border ${
+            scanResult.error ? "border-red-400/40 bg-red-400/10" :
+            scanResult.status === "clear" ? "border-emerald-400/40 bg-emerald-400/5" :
+            scanResult.status === "escalated" ? "border-red-400/40 bg-red-400/5" :
+            "border-yellow-400/40 bg-yellow-400/5"
+          }`}>
+          {scanResult.error ? (
+            <p className="text-red-400 text-sm">{scanResult.error}</p>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-semibold text-sm">
+                  Scan Complete — {scanResult.findings?.length || 0} finding(s) detected
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Highest severity: <span className={RISK_COLORS[scanResult.highestSeverity]?.split(" ")[0]}>{scanResult.highestSeverity}</span>
+                  {" · "}Duration: {((scanResult.scanDuration || 0) / 1000).toFixed(1)}s
+                  {" · "}Quality: {scanResult.qualityScore}/10
+                </p>
+              </div>
+              <span className={`text-sm font-bold uppercase ${STATUS_COLORS[scanResult.status] || "text-gray-400"}`}>
+                {(scanResult.status || "").replace(/_/g, " ")}
+              </span>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2 border-b border-white/10 pb-1">
+        {subTabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveSubTab(t.id)}
+            data-testid={`tab-security-${t.id}`}
+            className={`px-4 py-2 text-sm rounded-t-lg transition-all ${
+              activeSubTab === t.id
+                ? "bg-emerald-500/20 text-emerald-300 border-b-2 border-emerald-400"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview */}
+      {activeSubTab === "overview" && (
+        <div className="space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Open Findings", value: openFindings.length, color: "text-white" },
+              { label: "Critical", value: criticalCount, color: "text-red-400" },
+              { label: "High", value: highCount, color: "text-orange-400" },
+              { label: "Events Logged", value: events.length, color: "text-blue-400" },
+            ].map(stat => (
+              <div key={stat.label} className="p-4 rounded-xl border border-white/10 bg-[#0B1B3F]/30">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
+                <p className={`text-3xl font-bold font-mono mt-1 ${stat.color}`}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Protected apps */}
+          <div className="p-5 rounded-xl border border-white/10 bg-[#0B1B3F]/20">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-4">Protected Applications</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {[
+                "C.A.R.E.N.", "Real Pulse Verifier", "My Life Assistant",
+                "The Remedy Club", "Rent-A-Buddy", "Eternal Chase",
+                "Project DNA Music", "Zapp Marketing", "Studio Artist Live",
+                "ClearSpace", "Global Trade Facilitators", "NIG Core",
+              ].map(app => (
+                <div key={app} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                  <span className="text-xs text-gray-300 truncate">{app}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent open findings preview */}
+          {openFindings.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Recent Open Findings</p>
+              {openFindings.slice(0, 5).map((f: any) => (
+                <div key={f.id} className={`p-4 rounded-xl border ${RISK_COLORS[f.riskLevel] || RISK_COLORS.INFO} space-y-2`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">{f.title}</span>
+                    <span className="text-xs font-bold uppercase">{f.riskLevel}</span>
+                  </div>
+                  <p className="text-xs text-gray-300">{f.summary}</p>
+                  <p className="text-xs text-gray-500">{f.affectedApp}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {openFindings.length === 0 && !scanning && (
+            <div className="text-center py-12 text-gray-500">
+              <Shield className="w-10 h-10 mx-auto mb-3 text-emerald-500/40" />
+              <p className="text-sm">No open findings — system is clean</p>
+              <p className="text-xs mt-1">Run a scan to check for new threats</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Findings */}
+      {activeSubTab === "findings" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            {["all", "open", "reviewed", "resolved", "false_positive"].map(s => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={`px-3 py-1 rounded-full text-xs capitalize border transition-all ${
+                  filterStatus === s ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300" : "border-white/10 text-gray-400 hover:text-white"
+                }`}
+                data-testid={`filter-security-${s}`}
+              >
+                {s.replace(/_/g, " ")}
+              </button>
+            ))}
+          </div>
+
+          {filteredFindings.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <Shield className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No findings in this category</p>
+            </div>
+          ) : (
+            filteredFindings.map((f: any) => (
+              <motion.div key={f.id} layout
+                className={`p-5 rounded-xl border space-y-3 ${RISK_COLORS[f.riskLevel] || RISK_COLORS.INFO}`}
+                data-testid={`card-finding-${f.id}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold">{f.title}</span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border border-current">{f.riskLevel}</span>
+                      {f.escalationRequired && <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-400/30 px-2 py-0.5 rounded-full">Escalation Required</span>}
+                      {f.ownerReviewNeeded && <span className="text-[10px] bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 px-2 py-0.5 rounded-full">Owner Review Needed</span>}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">{f.affectedApp} · {f.category} · Confidence: {f.confidence}%</p>
+                  </div>
+                  <span className={`text-xs capitalize px-2 py-1 rounded-lg border ${
+                    f.status === "open" ? "border-orange-400/30 text-orange-300 bg-orange-500/10" :
+                    f.status === "resolved" ? "border-emerald-400/30 text-emerald-300 bg-emerald-500/10" :
+                    "border-gray-400/20 text-gray-400 bg-white/5"
+                  }`}>
+                    {f.status?.replace(/_/g, " ")}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-300">{f.summary}</p>
+
+                {f.signals && (() => {
+                  try {
+                    const sigs = JSON.parse(f.signals);
+                    if (sigs.length > 0) return (
+                      <div className="flex flex-wrap gap-1">
+                        {sigs.map((s: string, i: number) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-gray-400">{s}</span>
+                        ))}
+                      </div>
+                    );
+                  } catch {}
+                  return null;
+                })()}
+
+                {f.recommendation && (
+                  <div className="p-3 rounded-lg bg-black/20 border border-white/5">
+                    <p className="text-[10px] text-gray-500 uppercase mb-1">Recommendation</p>
+                    <p className="text-xs text-gray-300">{f.recommendation}</p>
+                  </div>
+                )}
+
+                {f.status === "open" && (
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => markFinding(f.id, "reviewed")}
+                      disabled={markingId === f.id}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-blue-500/10 border border-blue-400/30 text-blue-300 hover:bg-blue-500/20"
+                      data-testid={`button-mark-reviewed-${f.id}`}
+                    >
+                      Mark Reviewed
+                    </button>
+                    <button
+                      onClick={() => markFinding(f.id, "resolved")}
+                      disabled={markingId === f.id}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20"
+                      data-testid={`button-resolve-${f.id}`}
+                    >
+                      Resolve
+                    </button>
+                    <button
+                      onClick={() => markFinding(f.id, "false_positive")}
+                      disabled={markingId === f.id}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10"
+                      data-testid={`button-false-positive-${f.id}`}
+                    >
+                      False Positive
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Events */}
+      {activeSubTab === "events" && (
+        <div className="space-y-3">
+          {events.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <Activity className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No events logged yet</p>
+            </div>
+          ) : (
+            events.map((e: any) => (
+              <div key={e.id} className={`flex items-start gap-3 p-3 rounded-xl border text-xs ${RISK_COLORS[e.severity] || RISK_COLORS.INFO}`}
+                data-testid={`event-row-${e.id}`}>
+                <span className={`font-bold uppercase text-[10px] px-2 py-0.5 rounded border border-current mt-0.5 flex-shrink-0`}>{e.severity}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white">{e.eventType}</p>
+                  <p className="text-gray-400 mt-0.5 line-clamp-2">{e.details}</p>
+                  {e.source && <p className="text-gray-600 mt-1">Source: {e.source}</p>}
+                </div>
+                <p className="text-gray-600 flex-shrink-0">{new Date(e.createdAt).toLocaleString()}</p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Ask Agent */}
+      {activeSubTab === "ask" && (
+        <div className="space-y-4">
+          <div className="p-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold text-white">Ask the Security Integrity Agent</span>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">
+              Ask anything about security posture, threat patterns, incident response, or recommendations for a specific app.
+            </p>
+            <textarea
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              placeholder="e.g. Are there any login anomalies across the CRM? What's the biggest risk right now?"
+              className="w-full bg-[#0B1B3F]/60 border border-white/10 rounded-lg p-3 text-white text-sm resize-none outline-none focus:border-emerald-500/60 mb-3"
+              rows={3}
+              data-testid="input-security-question"
+            />
+            <button
+              onClick={askQuestion}
+              disabled={askingQuestion || !question.trim()}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-lg text-black font-bold text-sm hover:bg-emerald-400 disabled:opacity-50 transition-all"
+              data-testid="button-ask-security"
+            >
+              {askingQuestion ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Shield className="w-4 h-4" /> Ask Agent</>}
+            </button>
+          </div>
+
+          {answer && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="p-5 rounded-xl border border-emerald-500/20 bg-[#0B1B3F]/40">
+              <p className="text-xs text-emerald-400 uppercase tracking-wider mb-3">Security Agent Response</p>
+              <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed">{answer}</p>
+            </motion.div>
+          )}
         </div>
       )}
     </motion.div>

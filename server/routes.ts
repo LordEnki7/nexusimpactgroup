@@ -23,6 +23,7 @@ import { generateDailyBrief, createProposal, executeApprovedTask, askOrchestrato
 import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOptimizer } from "./agents/specialistAgents";
 import { scheduler } from "./agents/scheduler";
 import { collectDivisionData, pingAllDivisions } from "./agents/divisionCollector";
+import { runSecurityScan, logSecurityEvent, askSecurityAgent } from "./agents/securityAgent";
 import { registerCommandCenterAuth, requireCommandCenterAuth } from "./commandCenterAuth";
 import { generateOutreachDraft, generateCrossDivisionRecommendations, summarizeContact, getCrmPipelineSummary } from "./agents/crmAgent";
 import { insertCrmContactSchema, insertCrmDealSchema, insertCrmActivitySchema } from "@shared/schema";
@@ -1057,6 +1058,74 @@ export async function registerRoutes(
       const live = results.filter((r) => r.status === "live").length;
       const offline = results.filter((r) => r.status === "offline").length;
       res.json({ success: true, results, summary: { total: results.length, live, offline, degraded: results.length - live - offline } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // ── SECURITY INTEGRITY AGENT ROUTES ─────────────────────────────────────────
+
+  app.post("/api/security/scan", isAdmin, async (req, res) => {
+    try {
+      const { context } = req.body || {};
+      const result = await runSecurityScan(context);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get("/api/security/findings", isAdmin, async (req, res) => {
+    try {
+      const findings = await storage.getSecurityFindings(req.query.status as string);
+      res.json({ success: true, findings });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.put("/api/security/findings/:id", isAdmin, async (req, res) => {
+    try {
+      await storage.updateSecurityFinding(Number(req.params.id), req.body);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get("/api/security/events", isAdmin, async (req, res) => {
+    try {
+      const events = await storage.getSecurityEvents(Number(req.query.limit) || 50);
+      res.json({ success: true, events });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/security/events", isAdmin, async (req, res) => {
+    try {
+      const event = await storage.createSecurityEvent(req.body);
+      res.json({ success: true, event });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get("/api/security/incidents", isAdmin, async (req, res) => {
+    try {
+      const incidents = await storage.getSecurityIncidents(req.query.status as string);
+      res.json({ success: true, incidents });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/security/ask", isAdmin, async (req, res) => {
+    try {
+      const { question } = req.body;
+      if (!question) return res.status(400).json({ success: false, error: "Question required" });
+      const answer = await askSecurityAgent(question);
+      res.json({ success: true, answer });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
     }

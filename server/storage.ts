@@ -36,6 +36,12 @@ import {
   type CrmActivity,
   type InsertCrmActivity,
   type CrmImport,
+  type SecurityEvent,
+  type InsertSecurityEvent,
+  type SecurityFinding,
+  type InsertSecurityFinding,
+  type SecurityIncident,
+  type InsertSecurityIncident,
   users,
   inquiries,
   subscribers,
@@ -55,6 +61,9 @@ import {
   crmDeals,
   crmActivities,
   crmImports,
+  securityEvents,
+  securityFindings,
+  securityIncidents,
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, desc, and } from "drizzle-orm";
@@ -132,6 +141,15 @@ export interface IStorage {
 
   createCrmImport(imp: { filename: string; rowsTotal: number }): Promise<CrmImport>;
   updateCrmImport(id: number, updates: Partial<CrmImport>): Promise<void>;
+
+  // Security
+  createSecurityEvent(event: InsertSecurityEvent): Promise<SecurityEvent>;
+  getSecurityEvents(limit?: number): Promise<SecurityEvent[]>;
+  createSecurityFinding(finding: InsertSecurityFinding): Promise<SecurityFinding>;
+  getSecurityFindings(status?: string, limit?: number): Promise<SecurityFinding[]>;
+  updateSecurityFinding(id: number, updates: Partial<SecurityFinding>): Promise<void>;
+  createSecurityIncident(incident: InsertSecurityIncident): Promise<SecurityIncident>;
+  getSecurityIncidents(status?: string): Promise<SecurityIncident[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -435,6 +453,45 @@ export class DatabaseStorage implements IStorage {
 
   async updateCrmImport(id: number, updates: Partial<CrmImport>): Promise<void> {
     await db.update(crmImports).set(updates).where(eq(crmImports.id, id));
+  }
+
+  // ── Security ────────────────────────────────────────────────────────────────
+
+  async createSecurityEvent(event: InsertSecurityEvent): Promise<SecurityEvent> {
+    const [e] = await db.insert(securityEvents).values(event).returning();
+    return e;
+  }
+
+  async getSecurityEvents(limit = 50): Promise<SecurityEvent[]> {
+    return db.select().from(securityEvents).orderBy(desc(securityEvents.createdAt)).limit(limit);
+  }
+
+  async createSecurityFinding(finding: InsertSecurityFinding): Promise<SecurityFinding> {
+    const [f] = await db.insert(securityFindings).values(finding).returning();
+    return f;
+  }
+
+  async getSecurityFindings(status?: string, limit = 50): Promise<SecurityFinding[]> {
+    if (status) {
+      return db.select().from(securityFindings).where(eq(securityFindings.status, status)).orderBy(desc(securityFindings.createdAt)).limit(limit);
+    }
+    return db.select().from(securityFindings).orderBy(desc(securityFindings.createdAt)).limit(limit);
+  }
+
+  async updateSecurityFinding(id: number, updates: Partial<SecurityFinding>): Promise<void> {
+    await db.update(securityFindings).set(updates).where(eq(securityFindings.id, id));
+  }
+
+  async createSecurityIncident(incident: InsertSecurityIncident): Promise<SecurityIncident> {
+    const [i] = await db.insert(securityIncidents).values(incident).returning();
+    return i;
+  }
+
+  async getSecurityIncidents(status?: string): Promise<SecurityIncident[]> {
+    if (status) {
+      return db.select().from(securityIncidents).where(eq(securityIncidents.status, status)).orderBy(desc(securityIncidents.createdAt));
+    }
+    return db.select().from(securityIncidents).orderBy(desc(securityIncidents.createdAt)).limit(50);
   }
 }
 
