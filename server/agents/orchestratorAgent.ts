@@ -16,6 +16,7 @@ const NIG_DIVISIONS = [
   { name: "The Shock Factor", category: "Entertainment", tier: 3, domain: "", description: "Podcast entertainment" },
   { name: "CAD and Me", category: "Health", tier: 3, domain: "", description: "Coronary artery disease audiobook" },
   { name: "Global Trade Facilitators", category: "Trade", tier: 1, domain: "globaltradefacilitators.us.com", description: "GSM-102 USDA Export Credit Guarantee" },
+  { name: "YaPide", category: "Delivery", tier: 2, domain: "yapide.app", description: "Fast & affordable delivery platform" },
   { name: "NIG Core", category: "Core", tier: 0, domain: "", description: "Central intelligence hub & ecosystem command center" },
 ];
 
@@ -38,7 +39,7 @@ ${NIG_DIVISIONS.map(d => `- ${d.name} (${d.category} - Tier ${d.tier}) - ${d.des
 
 DIVISION TIERS:
 - Tier 1 (Critical/Revenue Priority): C.A.R.E.N., My Life Assistant, The Remedy Club, NIG Core
-- Tier 2 (Growth/Scale): Rent-A-Buddy, Eternal Chase, Project DNA Music, Zapp Marketing, Studio Artist Live, ClearSpace, Real Pulse Verifier, Mr. Delete
+- Tier 2 (Growth/Scale): Rent-A-Buddy, Eternal Chase, Project DNA Music, Zapp Marketing, Studio Artist Live, ClearSpace, Real Pulse Verifier, YaPide
 - Tier 3 (Developing): Right Time Notary, The Shock Factor, CAD and Me
 
 EXECUTIVE AGENTS AVAILABLE:

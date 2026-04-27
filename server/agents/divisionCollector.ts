@@ -160,7 +160,16 @@ export interface CollectionResult {
   responseMs: number;
 }
 
-const DIVISION_ENDPOINTS: { name: string; domain: string }[] = [
+interface DivisionEndpoint {
+  name: string;
+  domain: string;
+  /** Custom auth header value — overrides the default Bearer token */
+  hubToken?: string;
+  /** If true, fetch /api/csrf-token before any write operations */
+  requiresCsrf?: boolean;
+}
+
+const DIVISION_ENDPOINTS: DivisionEndpoint[] = [
   { name: "C.A.R.E.N.", domain: "carenalert.com" },
   { name: "Real Pulse Verifier", domain: "realpulseverifier.com" },
   { name: "My Life Assistant", domain: "mylifeassistant.vip" },
@@ -172,19 +181,45 @@ const DIVISION_ENDPOINTS: { name: string; domain: string }[] = [
   { name: "Studio Artist Live", domain: "studioartistlive.com" },
   { name: "ClearSpace", domain: "clearspace.photos" },
   { name: "Global Trade Facilitators", domain: "globaltradefacilitators.us.com" },
+  {
+    name: "YaPide",
+    domain: "yapide.app",
+    hubToken: process.env.YAPIDE_HUB_TOKEN,
+    requiresCsrf: true,
+  },
 ];
 
-async function fetchDivisionStatus(domain: string): Promise<{ data: DivisionStatusResponse; responseMs: number }> {
+/** Fetch the CSRF token from a yapide-style app before write operations */
+export async function fetchCsrfToken(domain: string, hubToken?: string): Promise<string | null> {
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (hubToken) headers["X-Hub-Token"] = hubToken;
+    const res = await fetch(`https://${domain}/api/csrf-token`, { method: "GET", headers });
+    if (res.ok) {
+      const data = await res.json();
+      return data.token || data.csrfToken || null;
+    }
+  } catch {}
+  return null;
+}
+
+/** Build auth headers for a given endpoint */
+function buildAuthHeaders(ep: DivisionEndpoint): Record<string, string> {
+  if (ep.hubToken) {
+    return { "X-Hub-Token": ep.hubToken, "Content-Type": "application/json" };
+  }
+  return { "Authorization": `Bearer ${NIG_API_KEY}`, "Content-Type": "application/json" };
+}
+
+async function fetchDivisionStatus(domain: string, ep?: DivisionEndpoint): Promise<{ data: DivisionStatusResponse; responseMs: number }> {
   const start = Date.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), COLLECTION_TIMEOUT_MS);
+  const headers = ep ? buildAuthHeaders(ep) : { "Authorization": `Bearer ${NIG_API_KEY}`, "Content-Type": "application/json" };
 
   try {
     const res = await fetch(`https://${domain}/api/nig-status`, {
-      headers: {
-        "Authorization": `Bearer ${NIG_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       signal: controller.signal,
     });
 
@@ -212,7 +247,7 @@ export async function collectDivisionData(): Promise<CollectionResult[]> {
   for (const endpoint of DIVISION_ENDPOINTS) {
     const start = Date.now();
     try {
-      const { data, responseMs } = await fetchDivisionStatus(endpoint.domain);
+      const { data, responseMs } = await fetchDivisionStatus(endpoint.domain, endpoint);
 
       const division = divisions.find(
         (d) => d.name.toLowerCase().includes(endpoint.name.toLowerCase().split(" ")[0].toLowerCase())

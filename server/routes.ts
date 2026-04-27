@@ -280,7 +280,8 @@ export async function registerRoutes(
         { name: "The Shock Factor", description: "Podcast Entertainment", category: "Entertainment", status: "coming_soon", tier: 3 },
         { name: "ClearSpace", description: "iPhone Image Cleaner", category: "Utility", status: "live", externalUrl: "https://clearspace.photos", tier: 2 },
         { name: "CAD and Me", description: "Coronary Artery Disease Audiobook", category: "Health", status: "coming_soon", tier: 3 },
-        { name: "NIG Core", description: "Central Intelligence Hub", category: "Core", status: "active", tier: 0 }
+        { name: "NIG Core", description: "Central Intelligence Hub", category: "Core", status: "active", tier: 0 },
+        { name: "YaPide", description: "Fast & Affordable Delivery Platform", category: "Delivery", status: "live", externalUrl: "https://yapide.app", tier: 2 },
       ];
 
       const created = [];
@@ -1120,6 +1121,37 @@ export async function registerRoutes(
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // ── YAPIDE INTEGRATION ───────────────────────────────────────────────────────
+
+  // Auto-insert YaPide into the divisions table if it doesn't exist
+  (async () => {
+    try {
+      const existing = await storage.getDivisions();
+      if (!existing.find(d => d.name === "YaPide")) {
+        await storage.createDivision({
+          name: "YaPide",
+          description: "Fast & Affordable Delivery Platform",
+          category: "Delivery",
+          status: "live",
+          externalUrl: "https://yapide.app",
+          tier: 2,
+        });
+        console.log("[YaPide] Division auto-created in database");
+      }
+    } catch {}
+  })();
+
+  app.get("/api/yapide/status", isAdmin, async (_req, res) => {
+    const hasToken = !!process.env.YAPIDE_HUB_TOKEN;
+    res.json({
+      tokenConfigured: hasToken,
+      domain: "yapide.app",
+      authHeader: "X-Hub-Token",
+      envVar: "YAPIDE_HUB_TOKEN",
+      csrfEndpoint: "https://yapide.app/api/csrf-token",
+    });
   });
 
   // ── DIVISION HEALTH CHECK ─────────────────────────────────────────────────────

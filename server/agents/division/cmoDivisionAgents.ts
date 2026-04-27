@@ -52,6 +52,9 @@ Divisions with live sites to track:
 - zapp-ecommerce.online
 - studioartistlive.com
 - clearspace.photos
+- realpulseverifier.com
+- globaltradefacilitators.us.com
+- yapide.app
 
 Respond with JSON containing:
 - agentName: "SEO Agent"

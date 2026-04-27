@@ -16,6 +16,7 @@ const DIVISIONS_CONTEXT = `The NIG ecosystem includes 15 divisions:
 - The Shock Factor (Entertainment - Tier 3) - Podcast entertainment
 - CAD and Me (Health - Tier 3) - Coronary artery disease audiobook
 - Global Trade Facilitators (Trade - Tier 1) - GSM-102 USDA Export Credit Guarantee | globaltradefacilitators.us.com
+- YaPide (Delivery - Tier 2) - Fast & affordable delivery platform | yapide.app
 - NIG Core (Core - Tier 0) - Central intelligence hub & ecosystem command center`;
 
 const PRIORITY_SCORING_INSTRUCTIONS = `Score each item on a 1-100 priority scale based on:

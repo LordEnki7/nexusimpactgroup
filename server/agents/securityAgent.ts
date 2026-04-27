@@ -14,6 +14,7 @@ const NIG_APPS = [
   "Studio Artist Live (studioartistlive.com)",
   "ClearSpace (clearspace.photos)",
   "Global Trade Facilitators (globaltradefacilitators.us.com)",
+  "YaPide (yapide.app)",
   "NIG Core Command Center",
 ];
 
