@@ -1,5 +1,31 @@
 # Nexus Impact Group (NIG) Marketing Website
 
+## Agent Safety Rules — Always Enforced
+
+These rules apply to every session, every task, no exceptions.
+
+### Database Rules
+1. NEVER drop, truncate, or bulk-delete from any table. Stop and ask first.
+2. NEVER delete a user row directly. Soft-delete only: set `account_status = 'deleted'` and `deleted_at = now()`.
+3. NEVER run seeders against a production database. Check `NODE_ENV` and `DATABASE_URL` first — if either points to production, throw an error and stop.
+4. NEVER change the type of a primary key column (e.g. serial ↔ varchar). Check the existing schema first and match it exactly.
+5. Before ANY bulk delete in production, require explicit user confirmation — an actual approval step, not just a flag.
+6. Log every destructive operation before it runs: who, what table, what record, why, timestamp.
+
+### File and Secrets Rules
+7. NEVER print, log, or write a secret, API key, or token to a file or console.
+8. NEVER modify `package.json` scripts without asking the user first.
+9. NEVER modify the Vite config (`vite.config.ts`, `server/vite.ts`).
+10. NEVER create documentation files (README, markdown) unless explicitly asked.
+
+### General Rules
+11. Do exactly what was asked. No additions, no subtractions.
+12. Do not use placeholder or mock data unless the user specifically requests it.
+13. If something feels risky or irreversible — stop and ask. It costs 30 seconds. Recovery costs hours or days.
+14. Clean up all debug code, test files, and console.log statements before marking a task complete.
+
+---
+
 ## Overview
 The Nexus Impact Group (NIG) marketing website is designed to be a futuristic showcase for a comprehensive ecosystem comprising 15 divisions, including the central NIG Core hub. This platform highlights divisions across various sectors such as safety, identity, automation, finance, connection, entertainment, health, and global trade. A key feature is the Master Ecosystem Command Center, which integrates AI-powered executive and specialist agents, provides daily executive briefs, manages approval workflows, and maintains a full audit trail of all executions. The project aims to consolidate NIG's diverse offerings into a cohesive digital presence, demonstrating its innovative approach and market leadership in integrated solutions.
 
