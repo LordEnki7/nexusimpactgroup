@@ -29,6 +29,16 @@ These rules apply to every session, every task, no exceptions.
 ## Overview
 The Nexus Impact Group (NIG) marketing website is designed to be a futuristic showcase for a comprehensive ecosystem comprising 15 divisions, including the central NIG Core hub. This platform highlights divisions across various sectors such as safety, identity, automation, finance, connection, entertainment, health, and global trade. A key feature is the Master Ecosystem Command Center, which integrates AI-powered executive and specialist agents, provides daily executive briefs, manages approval workflows, and maintains a full audit trail of all executions. The project aims to consolidate NIG's diverse offerings into a cohesive digital presence, demonstrating its innovative approach and market leadership in integrated solutions.
 
+## App Marketplace
+A fully functional app marketplace at `/marketplace` (public, no login required) allowing NIG to sell its division concepts to buyers.
+- **14 pre-loaded listings** — all NIG divisions except C.A.R.E.N., each with full buyer details
+- **3 deal types** — Concept License, Full IP Sale, Partnership/Revenue Share
+- **Buyer flow** — Browse → View Details → Express Interest → inquiry stored in DB → NDA tracked in Command Center
+- **Tiers** — Starter ($2.5K–$7.5K), Launch-Ready ($10K–$25K), Premium ($25K–$75K+), Full Business ($50K–$150K+)
+- **Admin API** — `/api/admin/marketplace/listings` and `/api/admin/marketplace/inquiries` (Command Center tab to be added)
+- **DB tables** — `marketplace_listings`, `marketplace_inquiries`
+- **Footer link** — "App Marketplace ↗" added to Company section
+
 ## User Preferences
 - Futuristic, tech-forward design aesthetic
 - NIG logo with intertwining rings for Core Ecosystem

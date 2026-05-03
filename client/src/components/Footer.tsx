@@ -29,6 +29,11 @@ export default function Footer() {
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Careers</li>
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Investor Relations</li>
               <li className="hover:text-[#14C1D7] cursor-pointer transition-colors">Contact</li>
+              <li>
+                <a href="/marketplace" className="hover:text-[#DAA520] text-[#14C1D7] transition-colors font-semibold">
+                  App Marketplace ↗
+                </a>
+              </li>
             </ul>
           </div>
 

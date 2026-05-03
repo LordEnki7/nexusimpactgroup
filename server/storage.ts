@@ -1,4 +1,10 @@
 import { 
+  type MarketplaceListing,
+  type InsertMarketplaceListing,
+  type MarketplaceInquiry,
+  type InsertMarketplaceInquiry,
+  marketplaceListings,
+  marketplaceInquiries,
   type User, 
   type InsertUser,
   type Inquiry,
@@ -150,6 +156,15 @@ export interface IStorage {
   updateSecurityFinding(id: number, updates: Partial<SecurityFinding>): Promise<void>;
   createSecurityIncident(incident: InsertSecurityIncident): Promise<SecurityIncident>;
   getSecurityIncidents(status?: string): Promise<SecurityIncident[]>;
+
+  // Marketplace
+  getMarketplaceListings(status?: string): Promise<MarketplaceListing[]>;
+  getMarketplaceListing(id: number): Promise<MarketplaceListing | undefined>;
+  createMarketplaceListing(listing: InsertMarketplaceListing): Promise<MarketplaceListing>;
+  updateMarketplaceListing(id: number, updates: Partial<MarketplaceListing>): Promise<MarketplaceListing | undefined>;
+  createMarketplaceInquiry(inquiry: InsertMarketplaceInquiry): Promise<MarketplaceInquiry>;
+  getMarketplaceInquiries(listingId?: number): Promise<MarketplaceInquiry[]>;
+  updateMarketplaceInquiry(id: number, updates: Partial<MarketplaceInquiry>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -492,6 +507,46 @@ export class DatabaseStorage implements IStorage {
       return db.select().from(securityIncidents).where(eq(securityIncidents.status, status)).orderBy(desc(securityIncidents.createdAt));
     }
     return db.select().from(securityIncidents).orderBy(desc(securityIncidents.createdAt)).limit(50);
+  }
+
+  // ── Marketplace ──────────────────────────────────────────────────────────────
+
+  async getMarketplaceListings(status?: string): Promise<MarketplaceListing[]> {
+    if (status) {
+      return db.select().from(marketplaceListings).where(eq(marketplaceListings.status, status)).orderBy(marketplaceListings.sortOrder, desc(marketplaceListings.createdAt));
+    }
+    return db.select().from(marketplaceListings).orderBy(marketplaceListings.sortOrder, desc(marketplaceListings.createdAt));
+  }
+
+  async getMarketplaceListing(id: number): Promise<MarketplaceListing | undefined> {
+    const [listing] = await db.select().from(marketplaceListings).where(eq(marketplaceListings.id, id));
+    return listing;
+  }
+
+  async createMarketplaceListing(listing: InsertMarketplaceListing): Promise<MarketplaceListing> {
+    const [l] = await db.insert(marketplaceListings).values(listing).returning();
+    return l;
+  }
+
+  async updateMarketplaceListing(id: number, updates: Partial<MarketplaceListing>): Promise<MarketplaceListing | undefined> {
+    const [l] = await db.update(marketplaceListings).set(updates).where(eq(marketplaceListings.id, id)).returning();
+    return l;
+  }
+
+  async createMarketplaceInquiry(inquiry: InsertMarketplaceInquiry): Promise<MarketplaceInquiry> {
+    const [i] = await db.insert(marketplaceInquiries).values(inquiry).returning();
+    return i;
+  }
+
+  async getMarketplaceInquiries(listingId?: number): Promise<MarketplaceInquiry[]> {
+    if (listingId) {
+      return db.select().from(marketplaceInquiries).where(eq(marketplaceInquiries.listingId, listingId)).orderBy(desc(marketplaceInquiries.createdAt));
+    }
+    return db.select().from(marketplaceInquiries).orderBy(desc(marketplaceInquiries.createdAt));
+  }
+
+  async updateMarketplaceInquiry(id: number, updates: Partial<MarketplaceInquiry>): Promise<void> {
+    await db.update(marketplaceInquiries).set(updates).where(eq(marketplaceInquiries.id, id));
   }
 }
 

@@ -1154,6 +1154,326 @@ export async function registerRoutes(
     });
   });
 
+  // ── MARKETPLACE ──────────────────────────────────────────────────────────────
+
+  const MARKETPLACE_SEED = [
+    {
+      title: "My Life Assistant",
+      tagline: "Your personal AI assistant for daily life management",
+      problem: "People struggle to manage appointments, reminders, tasks, and personal information across multiple apps with no unified intelligence layer.",
+      targetCustomer: "Busy professionals, parents, and individuals aged 25–55 who want a single AI-powered hub for their daily life",
+      demoUrl: "https://mylifeassistant.vip",
+      revenueModel: "Subscription SaaS — $9.99/month basic, $24.99/month premium with AI features. Upsell: family plans, concierge add-ons.",
+      techStack: "React, Node.js, PostgreSQL, OpenAI GPT-4o, Twilio",
+      category: "AI / Productivity",
+      tier: "launch_ready",
+      priceMin: 18000, priceMax: 45000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full source code (frontend + backend)", "Brand assets & logo", "Working demo with live AI integration", "Monetization plan & pricing strategy", "User flow map & onboarding docs", "30-day setup support option"]),
+      featured: true, sortOrder: 1,
+    },
+    {
+      title: "The Remedy Club",
+      tagline: "Holistic wellness community and telehealth marketplace",
+      problem: "People seeking holistic health solutions have no curated marketplace connecting them to verified practitioners, supplements, and wellness plans.",
+      targetCustomer: "Health-conscious adults 30–60 seeking alternative medicine, functional health, and community-based wellness support",
+      demoUrl: "https://theremedyclub.vip",
+      revenueModel: "Marketplace commission 15–20% per booking. Subscription membership $19.99/month. Supplement affiliate revenue.",
+      techStack: "React, Express, PostgreSQL, Stripe, Calendly API",
+      category: "Health & Wellness",
+      tier: "premium",
+      priceMin: 35000, priceMax: 80000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Complete marketplace platform (frontend + backend)", "Practitioner onboarding system", "Booking & payment infrastructure", "Brand kit & marketing assets", "Revenue model documentation", "User acquisition playbook"]),
+      featured: true, sortOrder: 2,
+    },
+    {
+      title: "Rent-A-Buddy",
+      tagline: "On-demand companion and social activity platform",
+      problem: "Millions of people experience loneliness and lack social confidence. There is no trusted, safe marketplace for paid companionship and guided social activities.",
+      targetCustomer: "Singles, seniors, travelers, and socially anxious individuals who want real human connection — for events, outings, or conversation",
+      demoUrl: "https://rent-a-buddy.info",
+      revenueModel: "Platform commission 20% per booking. Premium buddy profiles $29.99/month. Background check upsell $9.99.",
+      techStack: "React, Node.js, PostgreSQL, Stripe, Google Maps API",
+      category: "Social",
+      tier: "launch_ready",
+      priceMin: 20000, priceMax: 50000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full two-sided marketplace platform", "Provider & client matching system", "Payment & booking infrastructure", "Safety & verification framework", "Brand assets and go-to-market plan", "Legal template for terms of service"]),
+      featured: false, sortOrder: 3,
+    },
+    {
+      title: "Eternal Chase",
+      tagline: "Gamified dating and relationship growth platform",
+      problem: "Dating apps are swiping machines with no depth. Users want meaningful connections with relationship goals, challenges, and progression built in.",
+      targetCustomer: "Singles and couples aged 21–45 who want gamified relationship-building rather than shallow swipe-based matching",
+      demoUrl: "https://eternalchase.stream",
+      revenueModel: "Freemium subscription $14.99/month premium. In-app coins for boosts. Couples challenge packs $4.99 each.",
+      techStack: "React Native, Node.js, PostgreSQL, WebSockets, OpenAI",
+      category: "Entertainment / Dating",
+      tier: "premium",
+      priceMin: 30000, priceMax: 75000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Web and mobile-ready codebase", "Gamification engine (challenges, streaks, rewards)", "Matching algorithm", "Brand assets & onboarding flow", "Monetization plan with in-app purchase structure", "Market size analysis"]),
+      featured: false, sortOrder: 4,
+    },
+    {
+      title: "Project DNA Music",
+      tagline: "AI-powered music discovery and artist collaboration platform",
+      problem: "Independent artists have no centralized platform to collaborate, distribute, and monetize music while fans have no way to discover authentic underground talent.",
+      targetCustomer: "Independent musicians, producers, and music fans who want direct artist-to-fan relationships and collaborative creation tools",
+      demoUrl: "https://projectdnamusic.info",
+      revenueModel: "Artist subscriptions $12.99/month. Fan memberships $7.99/month. Collaboration marketplace 10% commission. NFT music drops.",
+      techStack: "React, Node.js, PostgreSQL, Stripe, AWS S3, OpenAI",
+      category: "Music / Entertainment",
+      tier: "launch_ready",
+      priceMin: 18000, priceMax: 42000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full platform (artist dashboard + fan portal)", "Music upload & streaming infrastructure", "Collaboration request system", "Monetization flows (subscriptions + marketplace)", "Brand identity & marketing assets", "Artist onboarding playbook"]),
+      featured: false, sortOrder: 5,
+    },
+    {
+      title: "Zapp Marketing & Manufacturing",
+      tagline: "Full-service digital marketing and custom product manufacturing hub",
+      problem: "Small businesses need both marketing services and custom branded products but are forced to use 5+ vendors with no integrated workflow.",
+      targetCustomer: "Small-to-mid businesses, e-commerce brands, and entrepreneurs who need marketing campaigns and physical branded merchandise in one place",
+      demoUrl: "https://zapp-ecommerce.online",
+      revenueModel: "Service retainers $1,500–$10,000/month. Product margins 30–50%. White-label reseller licensing $499/month.",
+      techStack: "React, Node.js, Stripe, Shopify API, Printful API",
+      category: "Marketing / E-Commerce",
+      tier: "premium",
+      priceMin: 40000, priceMax: 100000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Service booking and client portal", "E-commerce store with product fulfillment integration", "Marketing campaign management tools", "Client reporting dashboard", "Full brand kit", "Vendor relationship documentation"]),
+      featured: false, sortOrder: 6,
+    },
+    {
+      title: "Studio Artist Live",
+      tagline: "Live streaming and virtual concert platform for independent artists",
+      problem: "Independent artists have no dedicated live-stream platform built for music performance, with ticketing, tipping, and fan engagement built in.",
+      targetCustomer: "Independent musicians, DJs, and performing artists who want to monetize live streams and build paid fan communities",
+      demoUrl: "https://studioartistlive.com",
+      revenueModel: "Ticket sales 15% platform fee. Monthly artist subscriptions $19.99. Fan super-chat tipping (30% cut). Virtual merch table.",
+      techStack: "React, Node.js, WebRTC, Stripe, AWS Media Services",
+      category: "Entertainment / Streaming",
+      tier: "launch_ready",
+      priceMin: 15000, priceMax: 38000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Live streaming infrastructure with low-latency WebRTC", "Ticketing and payment system", "Artist dashboard & analytics", "Fan engagement tools (chat, tips, reactions)", "Brand assets & promotional templates", "Deployment documentation"]),
+      featured: false, sortOrder: 7,
+    },
+    {
+      title: "ClearSpace",
+      tagline: "AI-powered photo cleanup and storage management app for iPhone",
+      problem: "iPhone users accumulate thousands of duplicate, blurry, and unwanted photos with no intelligent tool to safely clean up their camera roll.",
+      targetCustomer: "iPhone users with large photo libraries — especially parents, travelers, and professionals managing large media collections",
+      demoUrl: "https://clearspace.photos",
+      revenueModel: "One-time purchase $4.99 or subscription $1.99/month. Premium unlimited cleanup $9.99/month. iCloud upsell referral.",
+      techStack: "Swift, Core ML, Photos Framework, CloudKit",
+      category: "Mobile Utility",
+      tier: "starter",
+      priceMin: 8000, priceMax: 20000,
+      status: "available",
+      dealTypes: "license,full_ip",
+      whatBuyerGets: JSON.stringify(["iOS app source code", "App Store listing and screenshots", "AI photo classification model", "Brand assets & app icon", "Monetization documentation", "App Store submission guide"]),
+      featured: false, sortOrder: 8,
+    },
+    {
+      title: "Real Pulse Verifier",
+      tagline: "True identity and credential verification platform",
+      problem: "Digital fraud, fake profiles, and unverified credentials cost businesses billions. There is no lightweight, API-first identity verification layer built for SMBs.",
+      targetCustomer: "Marketplaces, gig economy platforms, hiring companies, and fintech startups needing fast, affordable identity verification",
+      demoUrl: "https://realpulseverifier.com",
+      revenueModel: "API pay-per-verification $0.50–$2.00 per check. Monthly SaaS plans $299–$2,499/month. Enterprise contracts.",
+      techStack: "Node.js, PostgreSQL, React, Stripe, Twilio, Document AI",
+      category: "Security / Identity",
+      tier: "premium",
+      priceMin: 45000, priceMax: 110000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full verification platform and API", "Admin dashboard with case management", "Identity document scanning pipeline", "API documentation and SDKs", "Brand assets", "Compliance framework notes", "Enterprise sales playbook"]),
+      featured: false, sortOrder: 9,
+    },
+    {
+      title: "Right Time Notary",
+      tagline: "On-demand mobile notary booking platform",
+      problem: "Finding a notary is a slow, frustrating process. People need verified mobile notaries available on short notice — especially for real estate, legal, and medical documents.",
+      targetCustomer: "Real estate agents, law firms, hospitals, and individuals needing fast mobile notary services at their location",
+      demoUrl: undefined,
+      revenueModel: "Booking commission 20–25%. Notary subscription plans $49.99/month. Urgent booking surcharge $25 platform fee.",
+      techStack: "React, Node.js, PostgreSQL, Stripe, Google Maps, Twilio",
+      category: "Services",
+      tier: "launch_ready",
+      priceMin: 12000, priceMax: 30000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Two-sided marketplace (client + notary)", "Booking, scheduling, and routing system", "Payment and invoice infrastructure", "Notary verification flow", "Brand assets and marketing page", "Operational guide"]),
+      featured: false, sortOrder: 10,
+    },
+    {
+      title: "The Shock Factor",
+      tagline: "Bold entertainment podcast network and fan community",
+      problem: "Podcast creators have no dedicated platform to monetize, grow communities, and deliver premium content experiences beyond basic audio distribution.",
+      targetCustomer: "Podcast creators with existing audiences and fans of unfiltered, bold entertainment content looking for premium community access",
+      demoUrl: undefined,
+      revenueModel: "Fan memberships $7.99/month. Exclusive episode paywall. Live show ticket sales. Merch store 40% margin.",
+      techStack: "React, Node.js, Stripe, AWS S3, WebSockets",
+      category: "Entertainment / Media",
+      tier: "starter",
+      priceMin: 6000, priceMax: 15000,
+      status: "available",
+      dealTypes: "license,full_ip",
+      whatBuyerGets: JSON.stringify(["Podcast hosting and streaming platform", "Paywall and membership infrastructure", "Community and fan engagement tools", "Brand assets and show templates", "Monetization documentation", "Content strategy guide"]),
+      featured: false, sortOrder: 11,
+    },
+    {
+      title: "CAD and Me",
+      tagline: "Patient education audiobook platform for coronary artery disease",
+      problem: "CAD patients are overwhelmed after diagnosis with medical jargon and no accessible, guided educational resources to understand and manage their condition.",
+      targetCustomer: "CAD patients, caregivers, and healthcare providers looking for patient-friendly cardiac education content and tools",
+      demoUrl: undefined,
+      revenueModel: "One-time audiobook purchase $24.99. Companion app subscription $9.99/month. Hospital licensing B2B contracts.",
+      techStack: "React Native, Node.js, Stripe, AWS Polly, PostgreSQL",
+      category: "Health / Education",
+      tier: "starter",
+      priceMin: 7500, priceMax: 18000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Audiobook platform with chapter navigation", "Companion health tracking app", "Content library and audio files", "Brand assets", "Hospital licensing pitch deck", "B2C and B2B revenue model"]),
+      featured: false, sortOrder: 12,
+    },
+    {
+      title: "Global Trade Facilitators",
+      tagline: "USDA GSM-102 export credit guarantee consulting and deal platform",
+      problem: "U.S. agricultural exporters and foreign buyers lack an efficient digital platform to access USDA GSM-102 export credit guarantees — a $5B+ annual program.",
+      targetCustomer: "U.S. agricultural exporters, foreign financial institutions, and import companies in emerging markets seeking export credit financing",
+      demoUrl: "https://globaltradefacilitators.us.com",
+      revenueModel: "Consulting retainer $5,000–$20,000/deal. Deal facilitation commission 0.5–1.5%. SaaS dashboard $999/month.",
+      techStack: "React, Node.js, PostgreSQL, Stripe, DocuSign API",
+      category: "Finance / Trade",
+      tier: "full_business",
+      priceMin: 75000, priceMax: 175000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full deal management platform", "USDA program documentation library", "Client and deal pipeline CRM", "Compliance workflow tools", "Brand assets and pitch materials", "Government program knowledge base", "60-day transition support option"]),
+      featured: true, sortOrder: 13,
+    },
+    {
+      title: "YaPide",
+      tagline: "Fast and affordable last-mile delivery platform",
+      problem: "Small businesses and consumers in underserved markets need affordable, reliable local delivery without the high fees of national platforms.",
+      targetCustomer: "Local restaurants, retailers, and consumers in mid-size cities who need fast delivery without paying premium platform rates",
+      demoUrl: "https://yapide.app",
+      revenueModel: "Per-delivery fee $2.99–$5.99. Business subscription plans $99/month. Driver subscription $9.99/month. Surge pricing.",
+      techStack: "React, Node.js, PostgreSQL, Google Maps API, Stripe, WebSockets",
+      category: "Delivery / Logistics",
+      tier: "premium",
+      priceMin: 35000, priceMax: 85000,
+      status: "available",
+      dealTypes: "license,full_ip,partnership",
+      whatBuyerGets: JSON.stringify(["Full delivery marketplace (consumer + driver + merchant)", "Real-time tracking and dispatch system", "Payment and payout infrastructure", "Driver onboarding and rating system", "Brand assets and marketing page", "Market expansion playbook"]),
+      featured: false, sortOrder: 14,
+    },
+  ];
+
+  (async () => {
+    try {
+      const existing = await storage.getMarketplaceListings();
+      if (existing.length === 0) {
+        for (const listing of MARKETPLACE_SEED) {
+          await storage.createMarketplaceListing(listing as any);
+        }
+        console.log(`[Marketplace] Seeded ${MARKETPLACE_SEED.length} listings`);
+      }
+    } catch (err) {
+      console.error("[Marketplace] Seed error:", err);
+    }
+  })();
+
+  app.get("/api/marketplace", async (_req, res) => {
+    try {
+      const listings = await storage.getMarketplaceListings();
+      res.json(listings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/marketplace/:id", async (req, res) => {
+    try {
+      const listing = await storage.getMarketplaceListing(Number(req.params.id));
+      if (!listing) return res.status(404).json({ error: "Not found" });
+      res.json(listing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/marketplace/inquiry", async (req, res) => {
+    try {
+      const { listingId, listingTitle, name, email, company, dealType, budget, message } = req.body;
+      if (!listingId || !name || !email || !dealType || !message) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const inquiry = await storage.createMarketplaceInquiry({ listingId, listingTitle, name, email, company, dealType, budget, message, status: "new" });
+      res.json({ success: true, inquiry });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/marketplace/inquiries", isAdmin, async (_req, res) => {
+    try {
+      const inquiries = await storage.getMarketplaceInquiries();
+      res.json(inquiries);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/admin/marketplace/inquiries/:id", isAdmin, async (req, res) => {
+    try {
+      await storage.updateMarketplaceInquiry(Number(req.params.id), req.body);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/admin/marketplace/listings", isAdmin, async (_req, res) => {
+    try {
+      const listings = await storage.getMarketplaceListings();
+      res.json(listings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/admin/marketplace/listings", isAdmin, async (req, res) => {
+    try {
+      const listing = await storage.createMarketplaceListing(req.body);
+      res.json(listing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/admin/marketplace/listings/:id", isAdmin, async (req, res) => {
+    try {
+      const listing = await storage.updateMarketplaceListing(Number(req.params.id), req.body);
+      res.json(listing);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ── DIVISION HEALTH CHECK ─────────────────────────────────────────────────────
 
   app.get("/api/divisions/health", isAdmin, async (_req, res) => {

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import Home from "@/pages/Home";
 import CommandCenter from "@/pages/CommandCenter";
+import Marketplace from "@/pages/Marketplace";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/command-center">
         {() => <ProtectedRoute component={CommandCenter} />}
       </Route>
+      <Route path="/marketplace" component={Marketplace} />
       <Route component={NotFound} />
     </Switch>
   );

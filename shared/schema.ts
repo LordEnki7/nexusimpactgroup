@@ -442,6 +442,54 @@ export type InsertSecurityFinding = z.infer<typeof insertSecurityFindingSchema>;
 export type SecurityIncident = typeof securityIncidents.$inferSelect;
 export type InsertSecurityIncident = z.infer<typeof insertSecurityIncidentSchema>;
 
+// ============================================
+// NIG APP MARKETPLACE SCHEMA
+// ============================================
+
+export const marketplaceListings = pgTable("marketplace_listings", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  tagline: text("tagline").notNull(),
+  problem: text("problem").notNull(),
+  targetCustomer: text("target_customer").notNull(),
+  demoUrl: text("demo_url"),
+  revenueModel: text("revenue_model").notNull(),
+  techStack: text("tech_stack").notNull(),
+  category: text("category").notNull(),
+  tier: text("tier").notNull().default("launch_ready"),
+  priceMin: integer("price_min").notNull().default(10000),
+  priceMax: integer("price_max").notNull().default(25000),
+  status: text("status").notNull().default("available"),
+  dealTypes: text("deal_types").notNull().default("license,full_ip,partnership"),
+  whatBuyerGets: text("what_buyer_gets").notNull(),
+  featured: boolean("featured").default(false),
+  sortOrder: integer("sort_order").default(99),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const marketplaceInquiries = pgTable("marketplace_inquiries", {
+  id: serial("id").primaryKey(),
+  listingId: integer("listing_id").notNull(),
+  listingTitle: text("listing_title").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  company: text("company"),
+  dealType: text("deal_type").notNull(),
+  budget: text("budget"),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("new"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMarketplaceListingSchema = createInsertSchema(marketplaceListings).omit({ id: true, createdAt: true });
+export const insertMarketplaceInquirySchema = createInsertSchema(marketplaceInquiries).omit({ id: true, createdAt: true });
+
+export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
+export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
+export type MarketplaceInquiry = typeof marketplaceInquiries.$inferSelect;
+export type InsertMarketplaceInquiry = z.infer<typeof insertMarketplaceInquirySchema>;
+
 // Auth schema (mandatory for Replit Auth)
 export * from "./models/auth";
 
