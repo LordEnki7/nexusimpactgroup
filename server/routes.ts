@@ -24,7 +24,9 @@ import { runOpportunityHunter, runRevenueGenerator, runGrowthEngine, runSystemOp
 import { scheduler } from "./agents/scheduler";
 import { collectDivisionData, pingAllDivisions, checkDivisionHealth } from "./agents/divisionCollector";
 import { runSecurityScan, logSecurityEvent, askSecurityAgent } from "./agents/securityAgent";
-import { registerCommandCenterAuth, requireCommandCenterAuth } from "./commandCenterAuth";
+import { registerCommandCenterAuth, requireCommandCenterAuth, getFailedLoginAttempts } from "./commandCenterAuth";
+import { registerHoneypotRoutes, getThreatStats } from "./security/honeypot";
+import { webhookLimiter } from "./security/rateLimiter";
 import { generateOutreachDraft, generateCrossDivisionRecommendations, summarizeContact, getCrmPipelineSummary } from "./agents/crmAgent";
 import { insertCrmContactSchema, insertCrmDealSchema, insertCrmActivitySchema } from "@shared/schema";
 
@@ -1080,7 +1082,7 @@ export async function registerRoutes(
     });
   });
 
-  app.post("/api/webhook/event", async (req, res) => {
+  app.post("/api/webhook/event", webhookLimiter, async (req, res) => {
     const token = getWebhookToken();
     const provided = req.headers["x-nig-key"];
     if (!provided || provided !== token) {
@@ -1731,8 +1733,21 @@ export async function registerRoutes(
     }
   });
 
+  // ── SECURITY ADMIN ENDPOINTS ──────────────────────────────────────────────────
+
+  app.get("/api/admin/threats", isAdmin, (_req, res) => {
+    res.json(getThreatStats());
+  });
+
+  app.get("/api/admin/failed-logins", isAdmin, (_req, res) => {
+    res.json({ attempts: getFailedLoginAttempts() });
+  });
+
   // Auto-start scheduler
   scheduler.start();
+
+  // ── HONEYPOT — must be last, after all real routes ────────────────────────────
+  registerHoneypotRoutes(app);
 
   return httpServer;
 }
