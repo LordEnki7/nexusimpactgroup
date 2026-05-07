@@ -101,10 +101,23 @@ app.use((req, res, next) => {
   } else {
     const sessionMod = await import("express-session");
     const isProduction = process.env.NODE_ENV === "production";
+
+    let store: any = undefined;
+    if (process.env.DATABASE_URL) {
+      const { default: connectPgSimple } = await import("connect-pg-simple");
+      const PgStore = connectPgSimple(sessionMod.default);
+      store = new PgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true,
+        tableName: "session",
+      });
+    }
+
     app.use(sessionMod.default({
       secret: process.env.SESSION_SECRET || "nig-dev-secret-change-in-prod",
       resave: false,
       saveUninitialized: false,
+      store,
       cookie: {
         httpOnly: true,
         secure: isProduction,
